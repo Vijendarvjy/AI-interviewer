@@ -1,0 +1,16 @@
+streamlit
+langchain
+langgraph
+langchain-groq
+langchain-community
+langchain-huggingface
+faiss-cpu
+pypdf
+python-docx
+SpeechRecognition
+pyttsx3
+gTTS
+pydub
+plotly
+pandas
+numpy
