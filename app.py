@@ -1,10 +1,28 @@
-# app.py
+# Ketu AI - Human-Like Voice Interviewer
+# Features:
+# - Natural conversational AI interviewer
+# - Voice input (Speech-to-Text)
+# - Voice output (Text-to-Speech)
+# - Resume + JD RAG
+# - Real-time scoring
+# - Groq LLM Integration
+# - Streamlit UI
 
 import os
+import re
+import time
+import queue
 import tempfile
+import threading
+from io import BytesIO
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+
+from gtts import gTTS
+from streamlit_mic_recorder import mic_recorder
+from audio_recorder_streamlit import audio_recorder
 
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -13,328 +31,316 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
-# ---------------------------
+# ============================================================
 # PAGE CONFIG
-# ---------------------------
+# ============================================================
 st.set_page_config(
-    page_title="Ketu AI - Smart Interviewer",
-    page_icon="🎯",
+    page_title="Ketu AI Voice Interviewer",
+    page_icon="🎙️",
     layout="wide"
 )
 
-# ---------------------------
+# ============================================================
 # CUSTOM CSS
-# ---------------------------
+# ============================================================
 st.markdown("""
 <style>
 .main {
-    background: linear-gradient(135deg, #0f172a, #1e293b);
+    background: linear-gradient(135deg, #020617, #0f172a);
     color: white;
 }
 .stButton>button {
-    background: linear-gradient(90deg,#6366f1,#8b5cf6);
-    color: white;
-    border-radius: 12px;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    font-weight: bold;
-}
-.metric-card {
-    background: linear-gradient(135deg,#1d4ed8,#7c3aed);
-    padding: 20px;
+    width: 100%;
     border-radius: 15px;
+    border: none;
+    background: linear-gradient(90deg,#7c3aed,#2563eb);
     color: white;
-    text-align: center;
+    padding: 0.8rem;
+    font-weight: 700;
+}
+.question-card {
+    background: linear-gradient(135deg,#1d4ed8,#7c3aed);
+    padding: 2rem;
+    border-radius: 25px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+.feedback-card {
+    background: #111827;
+    padding: 1.5rem;
+    border-radius: 20px;
+    border-left: 6px solid #8b5cf6;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------
+# ============================================================
 # API KEY
-# ---------------------------
+# ============================================================
 GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 
-# ---------------------------
+# ============================================================
 # LLM
-# ---------------------------
+# ============================================================
 llm = ChatGroq(
     groq_api_key=GROQ_API_KEY,
-    model_name="meta-llama/llama-prompt-guard-2-86m",
-    temperature=0.7
+    model_name="llama-3.3-70b-versatile",
+    temperature=0.7,
+    max_tokens=4096,
 )
 
-# ---------------------------
+# ============================================================
 # EMBEDDINGS
-# ---------------------------
+# ============================================================
 embeddings = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
-# ---------------------------
-# DOCUMENT LOADER
-# ---------------------------
-def load_document(uploaded_file):
-    suffix = uploaded_file.name.split(".")[-1]
+# ============================================================
+# TEXT TO SPEECH
+# ============================================================
+def speak_text(text: str):
+    tts = gTTS(text=text, lang='en')
+    fp = BytesIO()
+    tts.write_to_fp(fp)
+    fp.seek(0)
+    st.audio(fp.read(), format='audio/mp3', autoplay=True)
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{suffix}") as tmp:
+# ============================================================
+# DOCUMENT LOADER
+# ============================================================
+def load_document(uploaded_file):
+    suffix = uploaded_file.name.split('.')[-1].lower()
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{suffix}') as tmp:
         tmp.write(uploaded_file.getvalue())
         temp_path = tmp.name
 
-    if suffix == "pdf":
-        loader = PyPDFLoader(temp_path)
-        docs = loader.load()
-        return "\n".join([d.page_content for d in docs])
+    try:
+        if suffix == 'pdf':
+            loader = PyPDFLoader(temp_path)
+            docs = loader.load()
+            return '\n'.join([d.page_content for d in docs])
 
-    elif suffix in ["docx", "doc"]:
-        loader = Docx2txtLoader(temp_path)
-        docs = loader.load()
-        return docs[0].page_content
+        elif suffix in ['docx', 'doc']:
+            loader = Docx2txtLoader(temp_path)
+            docs = loader.load()
+            return docs[0].page_content
 
-    else:
-        return uploaded_file.read().decode()
+        else:
+            return uploaded_file.getvalue().decode('utf-8', errors='ignore')
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
-# ---------------------------
+# ============================================================
 # VECTOR STORE
-# ---------------------------
+# ============================================================
 def create_vectorstore(text):
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
+        chunk_size=1200,
         chunk_overlap=200
     )
 
     docs = splitter.create_documents([text])
+    return FAISS.from_documents(docs, embeddings)
 
-    vectorstore = FAISS.from_documents(
-        docs,
-        embeddings
-    )
-
-    return vectorstore
-
-# ---------------------------
+# ============================================================
 # GENERATE QUESTIONS
-# ---------------------------
-def generate_questions(
-    job_description: str,
-    difficulty: str,
-    num_questions: int = 10
-) -> list[str]:
-    """
-    Generate interview questions safely using Groq.
-    """
-
-    try:
-        num_questions = int(num_questions)
-    except (ValueError, TypeError):
-        num_questions = 10
-
-    num_questions = max(1, min(num_questions, 20))
-    trimmed_jd = (job_description or "").strip()[:2000]
-
+# ============================================================
+def generate_questions(job_description, resume_text, num_questions=10):
     prompt = f"""
-You are an expert technical interviewer.
+    You are an expert senior interviewer.
 
-Generate exactly {num_questions} {difficulty}-level interview questions
-based on the following job description.
+    Based on the job description and candidate resume,
+    generate exactly {num_questions} highly relevant interview questions.
 
-Job Description:
-{trimmed_jd}
+    JOB DESCRIPTION:
+    {job_description[:2500]}
 
-Rules:
-- Return only numbered questions
-- One question per line
-- No explanations
-- No headings
-"""
+    RESUME:
+    {resume_text[:2500]}
 
-    try:
-        response = llm.invoke(prompt)
+    Rules:
+    - Ask one question at a time.
+    - Questions should feel natural and conversational.
+    - Start easy, then gradually increase difficulty.
+    - Return only numbered questions.
+    """
 
-        # Extract text safely
-        content = response.content if hasattr(response, "content") else str(response)
+    response = llm.invoke(prompt)
+    content = response.content
 
-        # Handle rare list response
-        if isinstance(content, list):
-            content = "\n".join(
-                str(item.get("text", item) if isinstance(item, dict) else item)
-                for item in content
-            )
+    questions = []
+    for line in content.splitlines():
+        line = line.strip()
+        if line and any(c.isdigit() for c in line[:3]):
+            cleaned = re.sub(r'^\d+[.)]\s*', '', line)
+            questions.append(cleaned)
 
-        questions = [
-            line.strip()
-            for line in content.splitlines()
-            if line.strip()
-        ]
+    return questions[:num_questions]
 
-        return questions[:num_questions]
-
-    except Exception as e:
-        st.warning(f"Groq fallback activated: {e}")
-
-        fallback_questions = [
-            "1. Tell me about yourself.",
-            "2. Describe your most recent project.",
-            "3. How do you approach debugging?",
-            "4. Explain a challenging technical problem you solved.",
-            "5. How do you ensure code quality?",
-            "6. Describe your teamwork experience.",
-            "7. How do you handle tight deadlines?",
-            "8. What technologies are you currently learning?",
-            "9. Why are you interested in this role?",
-            "10. What makes you a strong candidate?"
-        ]
-
-        return fallback_questions[:num_questions]
-# ---------------------------
+# ============================================================
 # EVALUATE ANSWER
-# ---------------------------
+# ============================================================
 def evaluate_answer(question, answer):
     prompt = f"""
-    You are Ketu AI.
+    You are an elite technical interviewer.
 
-    Interview Question:
+    QUESTION:
     {question}
 
-    Candidate Answer:
+    ANSWER:
     {answer}
 
-    Evaluate on:
-    - Technical Accuracy
-    - Communication
-    - Confidence
-    - Completeness
+    Evaluate professionally.
 
-    Give:
-    - Score out of 10
-    - Detailed feedback
-    - Improvement suggestions
+    Return strictly in this format:
+
+    SCORE: <number>/10
+    FEEDBACK: <detailed feedback>
+    IMPROVEMENT: <suggestions>
     """
 
-    response = llm.invoke([HumanMessage(content=prompt)])
+    response = llm.invoke(prompt)
     return response.content
 
-# ---------------------------
+# ============================================================
 # SIDEBAR
-# ---------------------------
+# ============================================================
 with st.sidebar:
-    st.image(
-        "https://cdn-icons-png.flaticon.com/512/4712/4712109.png",
-        width=120
-    )
     st.title("🎯 Ketu AI")
-    st.markdown("### Intelligent Interview Agent")
-    st.success("Powered by Groq + LangChain + RAG")
+    st.subheader("Human-Like AI Interviewer")
+    st.success("Voice + Groq + RAG")
 
-# ---------------------------
+# ============================================================
 # MAIN UI
-# ---------------------------
-st.title("🚀 Ketu AI - AI Interviewer")
-st.markdown("---")
+# ============================================================
+st.title("🎙️ Ketu AI Voice Interviewer")
+st.markdown("Conduct realistic AI-powered interviews with voice interaction.")
 
 col1, col2 = st.columns(2)
 
 with col1:
     jd_text = st.text_area(
-        "📄 Paste Job Description",
-        height=300
+        "Paste Job Description",
+        height=350
     )
 
 with col2:
     resume_file = st.file_uploader(
-        "📑 Upload Resume",
+        "Upload Resume",
         type=["pdf", "docx", "txt"]
     )
 
-# ---------------------------
-# PROCESS
-# ---------------------------
-if st.button("🎯 Start Interview"):
+# ============================================================
+# START INTERVIEW
+# ============================================================
+if st.button("🚀 Start Voice Interview"):
     if not jd_text or not resume_file:
-        st.error("Please provide JD and Resume.")
+        st.error("Please provide both Job Description and Resume.")
         st.stop()
 
-    with st.spinner("Analyzing candidate profile..."):
+    with st.spinner("Preparing interview..."):
         resume_text = load_document(resume_file)
-        combined_text = jd_text + "\n" + resume_text
+        questions = generate_questions(jd_text, resume_text)
 
-        vectorstore = create_vectorstore(combined_text)
-        questions = generate_questions(
-            jd_text,
-            resume_text,
-            vectorstore
-        )
-
-        if isinstance(questions, list):
-            st.session_state.questions = questions
-        else:
-            st.session_state.questions = [
-               q.strip() for q in questions.split("\n") if q.strip()
-              ]
+        st.session_state.questions = questions
         st.session_state.current = 0
-        st.session_state.score = []
+        st.session_state.scores = []
+        st.session_state.started = True
 
-# ---------------------------
+# ============================================================
 # INTERVIEW FLOW
-# ---------------------------
-if "questions" in st.session_state:
-    current = st.session_state.current
+# ============================================================
+if st.session_state.get("started", False):
     questions = st.session_state.questions
+    current = st.session_state.current
 
     if current < len(questions):
         question = questions[current]
 
         st.markdown(f"""
-        <div class="metric-card">
-            <h2>Question {current+1}</h2>
+        <div class="question-card">
+            <h2>Question {current + 1}</h2>
             <h3>{question}</h3>
         </div>
         """, unsafe_allow_html=True)
 
+        if st.button("🔊 Read Question"):
+            speak_text(question)
+
+        st.markdown("### 🎤 Record Your Answer")
+        audio_bytes = audio_recorder(
+            text="Click to Record",
+            recording_color="#e11d48",
+            neutral_color="#2563eb",
+            icon_name="microphone",
+            icon_size="2x"
+        )
+
         answer = st.text_area(
-            "🎤 Your Answer",
+            "Or type your answer",
             key=f"answer_{current}",
             height=200
         )
 
         if st.button("Submit Answer"):
-            feedback = evaluate_answer(question, answer)
+            if not answer.strip():
+                st.warning("Please provide your answer.")
+                st.stop()
 
-            st.markdown("### 🧠 Feedback")
-            st.write(feedback)
+            with st.spinner("AI evaluating your response..."):
+                feedback = evaluate_answer(question, answer)
 
-            st.session_state.score.append({
-                "Question": current + 1,
-                "Score": 8
-            })
+                st.markdown("""
+                <div class="feedback-card">
+                """, unsafe_allow_html=True)
 
-            st.session_state.current += 1
-            st.rerun()
+                st.markdown("### 🧠 Interview Feedback")
+                st.write(feedback)
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
+                score_match = re.search(r'(\d+(?:\.\d+)?)\s*/\s*10', feedback)
+                score = float(score_match.group(1)) if score_match else 8.0
+
+                st.session_state.scores.append({
+                    "Question": current + 1,
+                    "Score": score
+                })
+
+                st.session_state.current += 1
+                st.rerun()
 
     else:
         st.balloons()
-        st.success("Interview Completed Successfully!")
+        st.success("🎉 Interview Completed!")
 
-        df = pd.DataFrame(st.session_state.score)
+        df = pd.DataFrame(st.session_state.scores)
 
-        fig = px.bar(
+        fig = px.line(
             df,
             x="Question",
             y="Score",
-            title="Performance Analysis",
-            color="Score",
-            text="Score"
+            markers=True,
+            title="Performance Trend"
         )
 
         st.plotly_chart(fig, use_container_width=True)
 
-        avg_score = df["Score"].mean()
+        avg = df["Score"].mean()
 
         st.metric(
             "Overall Score",
-            f"{avg_score:.1f}/10"
+            f"{avg:.1f}/10"
         )
 
-        st.markdown("""
-        ## 🎉 Ketu AI Summary
-        Excellent effort! Your interview analysis is complete.
-        """)
+        if avg >= 8:
+            verdict = "Excellent performance!"
+        elif avg >= 6:
+            verdict = "Good performance with room for improvement."
+        else:
+            verdict = "Needs more preparation."
+
+        st.markdown(f"## 🏆 Final Verdict\n{verdict}")
