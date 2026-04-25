@@ -120,40 +120,45 @@ def generate_questions(
     num_questions: int = 10
 ) -> list[str]:
     """
-    Generate interview questions while handling Groq token limits safely.
+    Generate interview questions safely using Groq.
     """
 
-    # Ensure integer value
     try:
         num_questions = int(num_questions)
     except (ValueError, TypeError):
         num_questions = 10
 
     num_questions = max(1, min(num_questions, 20))
-
-    # Aggressively trim JD
     trimmed_jd = (job_description or "").strip()[:2000]
 
     prompt = f"""
 You are an expert technical interviewer.
 
-Generate exactly {num_questions} interview questions.
-
-Difficulty: {difficulty}
+Generate exactly {num_questions} {difficulty}-level interview questions
+based on the following job description.
 
 Job Description:
 {trimmed_jd}
 
 Rules:
 - Return only numbered questions
+- One question per line
 - No explanations
 - No headings
-- Keep each question concise
 """
 
     try:
         response = llm.invoke(prompt)
-        content = response.content.strip()
+
+        # Extract text safely
+        content = response.content if hasattr(response, "content") else str(response)
+
+        # Handle rare list response
+        if isinstance(content, list):
+            content = "\n".join(
+                str(item.get("text", item) if isinstance(item, dict) else item)
+                for item in content
+            )
 
         questions = [
             line.strip()
@@ -161,25 +166,22 @@ Rules:
             if line.strip()
         ]
 
-        if not questions:
-            raise ValueError("No questions generated.")
-
         return questions[:num_questions]
 
     except Exception as e:
-        st.warning(f"Groq API fallback activated: {e}")
+        st.warning(f"Groq fallback activated: {e}")
 
         fallback_questions = [
             "1. Tell me about yourself.",
-            "2. Walk me through your recent project.",
-            "3. What technical challenges have you solved recently?",
-            "4. How do you debug production issues?",
-            "5. Explain your preferred development workflow.",
-            "6. How do you ensure code quality?",
-            "7. Describe a difficult team collaboration.",
-            "8. How do you prioritize tasks under pressure?",
-            "9. What new technology have you learned recently?",
-            "10. Why should we hire you?"
+            "2. Describe your most recent project.",
+            "3. How do you approach debugging?",
+            "4. Explain a challenging technical problem you solved.",
+            "5. How do you ensure code quality?",
+            "6. Describe your teamwork experience.",
+            "7. How do you handle tight deadlines?",
+            "8. What technologies are you currently learning?",
+            "9. Why are you interested in this role?",
+            "10. What makes you a strong candidate?"
         ]
 
         return fallback_questions[:num_questions]
