@@ -114,56 +114,65 @@ def create_vectorstore(text):
 # ---------------------------
 # GENERATE QUESTIONS
 # ---------------------------
-def generate_questions(job_description: str, difficulty: str, num_questions: int = 10):
+def generate_questions(job_description: str,
+                       difficulty: str,
+                       num_questions: int = 10):
     """
-    Generate interview questions using Groq safely.
+    Generate interview questions with automatic prompt compression.
+    Prevents Groq token-limit errors.
     """
+
+    # Limit JD size to avoid Groq 400 errors
+    max_jd_chars = 4000
+    trimmed_jd = job_description[:max_jd_chars]
 
     prompt = f"""
 You are an expert technical interviewer.
 
-Generate exactly {num_questions} unique {difficulty}-level interview questions
-based on the following Job Description.
+Based on the following job description, generate exactly
+{num_questions} {difficulty}-level interview questions.
 
-JOB DESCRIPTION:
-{job_description}
+Job Description:
+{trimmed_jd}
 
 Rules:
-- Return only numbered questions.
-- No explanations.
-- No headings.
-- One question per line.
+1. Return only questions.
+2. Number each question.
+3. No explanations.
+4. No introductory text.
 """
 
     try:
         response = llm.invoke(prompt)
 
-        content = response.content if hasattr(response, "content") else str(response)
+        content = response.content.strip()
 
         questions = [
             line.strip()
             for line in content.split("\n")
-            if line.strip() and any(char.isdigit() for char in line[:3])
+            if line.strip()
         ]
-
-        if not questions:
-            questions = [
-                q.strip()
-                for q in content.split("\n")
-                if q.strip()
-            ]
 
         return questions[:num_questions]
 
     except Exception as e:
-        st.error(f"Groq API Error: {str(e)}")
-        return [
-            "Tell me about yourself.",
-            "Explain your recent project.",
-            "What challenges have you solved recently?",
-            "How do you approach debugging?",
-            "Describe your problem-solving methodology."
-        ][:num_questions]
+        st.error(f"Groq API Error: {e}")
+
+        # Safe fallback
+        fallback_questions = [
+            "1. Tell me about yourself.",
+            "2. Describe your most challenging project.",
+            "3. How do you approach problem-solving?",
+            "4. Explain a recent technical issue you resolved.",
+            "5. What are your key strengths?",
+            "6. How do you handle deadlines?",
+            "7. Describe your experience with relevant technologies.",
+            "8. How do you stay updated with industry trends?",
+            "9. Explain a situation where you worked in a team.",
+            "10. Why are you interested in this role?"
+        ]
+
+        return fallback_questions[:num_questions]
 # ---------------------------
 # EVALUATE ANSWER
 # ---------------------------
