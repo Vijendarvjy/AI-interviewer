@@ -92,9 +92,20 @@ llm = ChatGroq(
 # ============================================================
 # EMBEDDINGS
 # ============================================================
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
+@st.cache_resource
+def load_embeddings():
+    return HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_kwargs={
+            "device": "cpu",
+            "trust_remote_code": False
+        },
+        encode_kwargs={
+            "normalize_embeddings": True
+        }
+    )
+
+embeddings = load_embeddings()
 
 # ============================================================
 # TEXT TO SPEECH
