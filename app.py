@@ -7,12 +7,35 @@ import threading
 from io import BytesIO
 
 import streamlit as st
+# Disable runtime watcher again (double safety)
+try:
+    st.set_option("server.fileWatcherType", "none")
+except Exception:
+    pass
+# Monkey patch torch.classes BEFORE loading transformers
+import torch
+
+
+class _TorchClassesPatch:
+    """
+    Prevents Streamlit from probing torch.classes.__path__._path
+    """
+
+    def __getattr__(self, name):
+        if name in ["__path__", "_path"]:
+            return []
+        raise AttributeError(name)
+
+
+torch.classes = _TorchClassesPatch()
+
 import pandas as pd
 import plotly.express as px
 
 from gtts import gTTS
 from streamlit_mic_recorder import mic_recorder
 from audio_recorder_streamlit import audio_recorder
+from sentence_transformers import SentenceTransformer
 
 from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -21,16 +44,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
-# ============================================================
-# IMPORTANT: ADD THIS AT THE VERY TOP OF YOUR APP
-# (before importing sentence_transformers, torch, or langchain)
-# ============================================================
-
-# Disable Streamlit file watcher (fixes torch.classes error)
+# Critical fixes for Streamlit Cloud + PyTorch
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
-
-# Optional: suppress torch dynamo issues
 os.environ["TORCHDYNAMO_DISABLE"] = "1"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 # ============================================================
 # PAGE CONFIG
@@ -127,6 +145,54 @@ def load_embeddings():
             return embedding.tolist()
 
     return LocalEmbeddings()
+
+embeddings = load_embeddings()
+
+# ============================================================
+# PLACE THESE LINES AT THE VERY TOP OF app.py
+# BEFORE ANY OTHER IMPORTS
+# ============================================================
+
+import os
+
+# Critical fixes for Streamlit Cloud + PyTorch
+os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
+os.environ["TORCHDYNAMO_DISABLE"] = "1"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+
+
+# ============================================================
+# SENTENCE TRANSFORMERS / LANGCHAIN
+# ============================================================
+@st.cache_resource(show_spinner=False)
+def load_embeddings():
+    class LocalEmbeddings:
+        def __init__(self):
+            self.model = SentenceTransformer(
+                "sentence-transformers/all-MiniLM-L6-v2",
+                device="cpu"
+            )
+
+        def embed_documents(self, texts):
+            return self.model.encode(
+                texts,
+                normalize_embeddings=True,
+                convert_to_numpy=True,
+                show_progress_bar=False,
+                batch_size=32
+            ).tolist()
+
+        def embed_query(self, text):
+            return self.model.encode(
+                [text],
+                normalize_embeddings=True,
+                convert_to_numpy=True,
+                show_progress_bar=False
+            )[0].tolist()
+
+    return LocalEmbeddings()
+
 
 embeddings = load_embeddings()
 
