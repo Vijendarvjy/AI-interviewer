@@ -114,62 +114,72 @@ def create_vectorstore(text):
 # ---------------------------
 # GENERATE QUESTIONS
 # ---------------------------
-def generate_questions(job_description: str,
-                       difficulty: str,
-                       num_questions: int = 10):
+def generate_questions(
+    job_description: str,
+    difficulty: str,
+    num_questions: int = 10
+) -> list[str]:
     """
-    Generate interview questions with automatic prompt compression.
-    Prevents Groq token-limit errors.
+    Generate interview questions while handling Groq token limits safely.
     """
 
-    # Limit JD size to avoid Groq 400 errors
-    max_jd_chars = 4000
-    trimmed_jd = job_description[:max_jd_chars]
+    # Ensure integer value
+    try:
+        num_questions = int(num_questions)
+    except (ValueError, TypeError):
+        num_questions = 10
+
+    num_questions = max(1, min(num_questions, 20))
+
+    # Aggressively trim JD
+    trimmed_jd = (job_description or "").strip()[:2000]
 
     prompt = f"""
 You are an expert technical interviewer.
 
-Based on the following job description, generate exactly
-{num_questions} {difficulty}-level interview questions.
+Generate exactly {num_questions} interview questions.
+
+Difficulty: {difficulty}
 
 Job Description:
 {trimmed_jd}
 
 Rules:
-1. Return only questions.
-2. Number each question.
-3. No explanations.
-4. No introductory text.
+- Return only numbered questions
+- No explanations
+- No headings
+- Keep each question concise
 """
 
     try:
         response = llm.invoke(prompt)
-
         content = response.content.strip()
 
         questions = [
             line.strip()
-            for line in content.split("\n")
+            for line in content.splitlines()
             if line.strip()
         ]
+
+        if not questions:
+            raise ValueError("No questions generated.")
 
         return questions[:num_questions]
 
     except Exception as e:
-        st.error(f"Groq API Error: {e}")
+        st.warning(f"Groq API fallback activated: {e}")
 
-        # Safe fallback
         fallback_questions = [
             "1. Tell me about yourself.",
-            "2. Describe your most challenging project.",
-            "3. How do you approach problem-solving?",
-            "4. Explain a recent technical issue you resolved.",
-            "5. What are your key strengths?",
-            "6. How do you handle deadlines?",
-            "7. Describe your experience with relevant technologies.",
-            "8. How do you stay updated with industry trends?",
-            "9. Explain a situation where you worked in a team.",
-            "10. Why are you interested in this role?"
+            "2. Walk me through your recent project.",
+            "3. What technical challenges have you solved recently?",
+            "4. How do you debug production issues?",
+            "5. Explain your preferred development workflow.",
+            "6. How do you ensure code quality?",
+            "7. Describe a difficult team collaboration.",
+            "8. How do you prioritize tasks under pressure?",
+            "9. What new technology have you learned recently?",
+            "10. Why should we hire you?"
         ]
 
         return fallback_questions[:num_questions]
