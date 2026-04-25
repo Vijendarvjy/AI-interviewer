@@ -1,13 +1,3 @@
-# Ketu AI - Human-Like Voice Interviewer
-# Features:
-# - Natural conversational AI interviewer
-# - Voice input (Speech-to-Text)
-# - Voice output (Text-to-Speech)
-# - Resume + JD RAG
-# - Real-time scoring
-# - Groq LLM Integration
-# - Streamlit UI
-
 import os
 import re
 import time
@@ -90,20 +80,42 @@ llm = ChatGroq(
 )
 
 # ============================================================
-# EMBEDDINGS
+# EMBEDDINGS (STREAMLIT CLOUD SAFE)
 # ============================================================
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def load_embeddings():
-    return HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        model_kwargs={
-            "device": "cpu",
-            "trust_remote_code": False
-        },
-        encode_kwargs={
-            "normalize_embeddings": True
-        }
-    )
+    """
+    Uses CPU-only SentenceTransformers.
+    Avoids PyTorch meta-tensor errors on Streamlit Cloud.
+    """
+    from sentence_transformers import SentenceTransformer
+
+    class LocalEmbeddings:
+        def __init__(self):
+            self.model = SentenceTransformer(
+                "sentence-transformers/all-MiniLM-L6-v2",
+                device="cpu"
+            )
+
+        def embed_documents(self, texts):
+            embeddings = self.model.encode(
+                texts,
+                normalize_embeddings=True,
+                convert_to_numpy=True,
+                show_progress_bar=False
+            )
+            return embeddings.tolist()
+
+        def embed_query(self, text):
+            embedding = self.model.encode(
+                text,
+                normalize_embeddings=True,
+                convert_to_numpy=True,
+                show_progress_bar=False
+            )
+            return embedding.tolist()
+
+    return LocalEmbeddings()
 
 embeddings = load_embeddings()
 
