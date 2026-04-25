@@ -114,40 +114,56 @@ def create_vectorstore(text):
 # ---------------------------
 # GENERATE QUESTIONS
 # ---------------------------
-def generate_questions(jd, resume, vectorstore):
-    docs = vectorstore.similarity_search(
-        "candidate skills and experience",
-        k=4
-    )
-
-    context = "\n".join([doc.page_content for doc in docs])
-
-    prompt = f"""
-    You are Ketu AI, an advanced technical interviewer.
-
-    Job Description:
-    {jd}
-
-    Candidate Resume:
-    {resume}
-
-    Context:
-    {context}
-
-    Generate exactly 10 interview questions.
-    Questions must be:
-    - Technical
-    - Behavioral
-    - Scenario-based
-    - Relevant to JD and Resume
-    - Increasing in difficulty
-
-    Return only numbered questions.
+def generate_questions(job_description: str, difficulty: str, num_questions: int = 10):
+    """
+    Generate interview questions using Groq safely.
     """
 
-    response = llm.invoke([HumanMessage(content=prompt)])
-    return response.content
+    prompt = f"""
+You are an expert technical interviewer.
 
+Generate exactly {num_questions} unique {difficulty}-level interview questions
+based on the following Job Description.
+
+JOB DESCRIPTION:
+{job_description}
+
+Rules:
+- Return only numbered questions.
+- No explanations.
+- No headings.
+- One question per line.
+"""
+
+    try:
+        response = llm.invoke(prompt)
+
+        content = response.content if hasattr(response, "content") else str(response)
+
+        questions = [
+            line.strip()
+            for line in content.split("\n")
+            if line.strip() and any(char.isdigit() for char in line[:3])
+        ]
+
+        if not questions:
+            questions = [
+                q.strip()
+                for q in content.split("\n")
+                if q.strip()
+            ]
+
+        return questions[:num_questions]
+
+    except Exception as e:
+        st.error(f"Groq API Error: {str(e)}")
+        return [
+            "Tell me about yourself.",
+            "Explain your recent project.",
+            "What challenges have you solved recently?",
+            "How do you approach debugging?",
+            "Describe your problem-solving methodology."
+        ][:num_questions]
 # ---------------------------
 # EVALUATE ANSWER
 # ---------------------------
