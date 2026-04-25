@@ -22,6 +22,17 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
 # ============================================================
+# IMPORTANT: ADD THIS AT THE VERY TOP OF YOUR APP
+# (before importing sentence_transformers, torch, or langchain)
+# ============================================================
+
+# Disable Streamlit file watcher (fixes torch.classes error)
+os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
+
+# Optional: suppress torch dynamo issues
+os.environ["TORCHDYNAMO_DISABLE"] = "1"
+
+# ============================================================
 # PAGE CONFIG
 # ============================================================
 st.set_page_config(
