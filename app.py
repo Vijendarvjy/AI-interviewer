@@ -264,7 +264,12 @@ if st.button("🎯 Start Interview"):
             vectorstore
         )
 
-        st.session_state.questions = questions.split("\n")
+        if isinstance(questions, list):
+            st.session_state.questions = questions
+        else:
+            st.session_state.questions = [
+               q.strip() for q in questions.split("\n") if q.strip()
+              ]
         st.session_state.current = 0
         st.session_state.score = []
 
