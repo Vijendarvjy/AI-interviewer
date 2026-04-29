@@ -502,30 +502,22 @@ init_state()
 # API & MODEL SETUP
 # ============================================================
 @st.cache_resource(show_spinner=False)
-# Initialize the OpenAI client (ensure your API key is in st.secrets)
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
-def transcribe_voice(audio_bytes):
-    """Sends audio bytes to OpenAI Whisper and returns the text."""
-    if not audio_bytes:
-        return None
-        
+@st.cache_resource
+def get_llm():
     try:
-        # Whisper requires a file object with a proper file name extension
-        audio_file = io.BytesIO(audio_bytes)
-        audio_file.name = "interview_response.wav" 
-        
-        # Call the Whisper API
-        response = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file
+        return ChatGroq(
+            temperature=0.3,
+            model_name="llama-3.3-70b-versatile",
+            api_key=st.secrets["GROQ_API_KEY"]
         )
-        return response.text
-        
     except Exception as e:
-        st.error(f"Failed to transcribe audio: {e}")
         return None
 
+# OpenAI Client for Whisper
+if "OPENAI_API_KEY" in st.secrets:
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+else:
+    st.error("Missing OPENAI_API_KEY in secrets.")
 @st.cache_resource(show_spinner=False)
 def get_embeddings():
     class LocalEmbeddings:
@@ -798,394 +790,100 @@ def screen_setup():
 # SCREEN — INTERVIEW
 # ============================================================
 def screen_interview():
-    llm       = get_llm()
+    llm = get_llm()
+    idx = st.session_state.current
     questions = st.session_state.questions
-    idx       = st.session_state.current
-    n         = len(questions)
+    n = len(questions)
 
-    # Finished?
     if idx >= n:
         st.session_state.screen = "results"
         st.rerun()
-        return
 
-    q       = questions[idx]
-    elapsed = int(time.time() - st.session_state.q_start) if st.session_state.q_start else 0
-
-    # ── Top Status Bar ─────────────────────────────────────
-    sb1, sb2, sb3, sb4 = st.columns([3, 1, 1, 1])
+    q = questions[idx]
+    
+    # --- UI Header & Progress ---
+    sb1, sb2, sb3 = st.columns([3, 1, 1])
     with sb1:
-        pct = idx / n
-        st.progress(pct)
-        st.caption(f"Question {idx + 1} of {n}  ·  {int(pct*100)}% complete")
+        st.progress(idx / n)
+        st.caption(f"Question {idx + 1} of {n}")
     with sb2:
         avg = (sum(s.get("score", 0) for s in st.session_state.scores) / len(st.session_state.scores)) if st.session_state.scores else 0
-        st.metric("Avg Score", f"{avg:.1f}/10" if st.session_state.scores else "—")
-    with sb3:
-        total_elapsed = int(time.time() - st.session_state.session_start) if st.session_state.session_start else 0
-        mins, secs = divmod(total_elapsed, 60)
-        st.metric("Session Time", f"{mins:02d}:{secs:02d}")
-    with sb4:
-        colour = "#00e5a0" if elapsed < 60 else "#ffb700" if elapsed < 120 else "#ff4d6d"
-        em, es = divmod(elapsed, 60)
-        st.markdown(
-            f'<div style="text-align:center;font-family:\'Bebas Neue\',sans-serif;font-size:2rem;'
-            f'color:{colour};letter-spacing:0.06em">{em:02d}:{es:02d}</div>'
-            f'<div style="text-align:center;font-family:\'JetBrains Mono\',monospace;font-size:0.68rem;'
-            f'color:var(--muted)">THIS Q</div>',
-            unsafe_allow_html=True,
-        )
-
+        st.metric("Avg Score", f"{avg:.1f}/10")
+    
     st.markdown("---")
 
-    # ── Question Card ───────────────────────────────────────
-    name_prefix = f"{st.session_state.candidate_name}, " if st.session_state.candidate_name else ""
-    st.markdown(f"""
-    <div class="question-card">
-        <div class="q-number">
-            ◆ {st.session_state.role_title} Interview &nbsp;·&nbsp; Q{idx + 1}/{n}
-        </div>
-        <p class="q-text">{q}</p>
-    </div>
-    """, unsafe_allow_html=True)
+    # --- Question Card ---
+    st.markdown(f'<div class="question-card"><div class="q-number">Question {idx+1}</div><p class="q-text">{q}</p></div>', unsafe_allow_html=True)
 
-    # Auto-read on first render
-    tts_key = f"_tts_{idx}"
-    if st.session_state.tts_enabled and tts_key not in st.session_state:
-        tts_autoplay(q)
-        st.session_state[tts_key] = True
-
-    # Not yet submitted
+    # --- Answer Area ---
     if not st.session_state.submitted:
-        c_btn1, c_btn2, _ = st.columns([1, 1, 3])
-        with c_btn1:
-            if st.button("🔊 Re-read Question", key=f"reread_{idx}"):
-                tts_autoplay(q)
-        with c_btn2:
-            if st.session_state.scores:
-                last_score = st.session_state.scores[-1].get("score", 0)
-            else:
-                last_score = 0   
-                color = "#00e5a0" if last_score >= 7 else "#ffb700" if last_score >= 5 else "#ff4d6d"
-                st.markdown(
-                    f'<div class="stat-chip" style="color:{color}">Last: {last_score}/10</div>',
-                    unsafe_allow_html=True,
-                )
-
-        st.markdown('<div class="section-label" style="margin-top:1.2rem">✍️ Your Answer</div>', unsafe_allow_html=True)
-
-        # Audio input (optional)
+        # Audio Recording Logic
         if HAS_AUDIO_RECORDER:
-            st.markdown(
-                '<div class="recording-indicator"><div class="live-dot"></div> Audio recording available</div>',
-                unsafe_allow_html=True,
-            )
-            audio_bytes = audio_recorder(
-                text="", recording_color="#ff4d6d", neutral_color="#1a2540",
-                icon_name="microphone", icon_size="2x", key=f"audio_{idx}",
-            )
-            if audio_bytes:
-                st.info("🎤 Audio captured — transcription requires Whisper integration. Type your answer below.")
+            audio_bytes = audio_recorder(text="Record Answer", icon_size="2x", key=f"rec_{idx}")
+            if audio_bytes and f"transcribed_{idx}" not in st.session_state:
+                with st.spinner("Transcribing..."):
+                    text = transcribe_voice(audio_bytes)
+                    if text:
+                        st.session_state[f"answer_{idx}"] = text
+                        st.session_state[f"transcribed_{idx}"] = True
+                        st.rerun()
 
-        answer = st.text_area(
-            "Type your answer here…",
-            key=f"answer_{idx}",
-            height=200,
-            placeholder=f"Answer question {idx + 1} as you would in a real interview. Be specific and use examples where possible.",
-            label_visibility="collapsed",
-        )
-        st.markdown(
-            '<div class="tip-box">💡 Tip: Use the STAR method (Situation · Task · Action · Result) '
-            'for behavioral questions.</div>',
-            unsafe_allow_html=True,
-        )
+        ans = st.text_area("Your Response", value=st.session_state.get(f"answer_{idx}", ""), key=f"input_{idx}", height=200)
 
-        col_submit, col_skip = st.columns([3, 1])
-        with col_submit:
-            if st.button("✅  Submit Answer & Get Feedback", key=f"submit_{idx}", use_container_width=True):
-                if not answer.strip():
-                    st.warning("Please write your answer before submitting.")
-                else:
-                    with st.spinner("🤖 Analysing your response…"):
-                        result = evaluate_answer(q, answer, st.session_state.role_title, llm)
-                    st.session_state.current_feedback = result
-                    st.session_state.current_score    = result["score"]
-                    st.session_state.submitted        = True
-                    elapsed_q = time.time() - st.session_state.q_start
-                    st.session_state.time_per_q.append(round(elapsed_q, 1))
-                    st.session_state.scores.append({
-                        "Question": idx + 1,
-                        "Score":    result["score"],
-                        "Verdict":  result["verdict"],
-                        "Q_text":   q[:60] + ("…" if len(q) > 60 else ""),
-                    })
-                    st.session_state.feedback_list.append(result)
+        if st.button("Submit Answer", use_container_width=True):
+            if not ans.strip():
+                st.warning("Please provide an answer.")
+            else:
+                with st.spinner("Analyzing..."):
+                    eval_res = evaluate_answer(q, ans, st.session_state.role_title, llm)
+                    st.session_state.scores.append(eval_res)
+                    st.session_state.feedback_list.append({"q": q, "a": ans, "eval": eval_res})
+                    st.session_state.current_feedback = eval_res
+                    st.session_state.submitted = True
                     st.rerun()
-        with col_skip:
-            if st.button("Skip →", key=f"skip_{idx}"):
-                st.session_state.time_per_q.append(0)
-                st.session_state.scores.append({
-                    "Question": idx + 1, "Score": 0.0,
-                    "Verdict": "Skipped", "Q_text": q[:60],
-                })
-                st.session_state.feedback_list.append({
-                    "score": 0.0, "strength": "—", "weakness": "Skipped",
-                    "suggestion": "Attempt every question in a real interview.",
-                    "verdict": "Skipped", "raw": "",
-                })
-                st.session_state.current  += 1
-                st.session_state.q_start   = time.time()
-                st.session_state.submitted = False
-                st.rerun()
-
-    # Submitted — show feedback
+    
+    # --- Feedback View ---
     else:
-        result = st.session_state.current_feedback
-        score  = result["score"]
-        verdict = result.get("verdict", "Average")
-        score_class = "score-high" if score >= 7 else "score-mid" if score >= 5 else "score-low"
-        score_icon  = "🟢" if score >= 7 else "🟡" if score >= 5 else "🔴"
-
+        f = st.session_state.current_feedback
+        v_class = "score-high" if f['score'] >= 7 else "score-mid" if f['score'] >= 5 else "score-low"
+        
         st.markdown(f"""
         <div class="feedback-card">
-            <span class="score-pill {score_class}">{score_icon} {score}/10 · {verdict}</span>
-            <div style="display:grid;gap:0.8rem">
-                <div>
-                    <div class="section-label">✅ Strength</div>
-                    <div style="font-size:0.95rem">{result.get("strength","")}</div>
-                </div>
-                <div>
-                    <div class="section-label">⚠️ Weakness</div>
-                    <div style="font-size:0.95rem">{result.get("weakness","")}</div>
-                </div>
-                <div>
-                    <div class="section-label">💡 Suggestion</div>
-                    <div style="font-size:0.95rem;color:rgba(0,212,255,0.8)">{result.get("suggestion","")}</div>
-                </div>
-            </div>
+            <div class="score-pill {v_class}">Score: {f['score']}/10 — {f['verdict']}</div>
+            <p><b>Strength:</b> {f['strength']}</p>
+            <p><b>Improvement:</b> {f['suggestion']}</p>
         </div>
         """, unsafe_allow_html=True)
-
-        # TTS for feedback
-        if st.session_state.tts_enabled:
-            fb_summary = f"Score {score} out of 10. {result.get('strength','')} {result.get('suggestion','')}"
-            tts_autoplay(fb_summary)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        col_next, col_review = st.columns([3, 1])
-        with col_next:
-            label = "Next Question ➜" if idx + 1 < n else "🏁 View Results"
-            if st.button(label, key=f"next_{idx}", use_container_width=True):
-                st.session_state.current  += 1
-                st.session_state.q_start   = time.time()
-                st.session_state.submitted = False
-                st.session_state.show_feedback = False
-                st.rerun()
-        with col_review:
-            if st.button("📋 Raw", key=f"raw_{idx}"):
-                st.session_state.show_feedback = not st.session_state.show_feedback
-
-        if st.session_state.show_feedback:
-            with st.expander("Full AI Evaluation", expanded=True):
-                st.code(result["raw"], language="markdown")
-
+        
+        if st.button("Next Question →", use_container_width=True):
+            st.session_state.current += 1
+            st.session_state.submitted = False
+            st.session_state.q_start = time.time()
+            st.rerun()
 
 # ============================================================
 # SCREEN — RESULTS
 # ============================================================
 def screen_results():
-    scores  = st.session_state.scores
-    feedbacks = st.session_state.feedback_list
-    n       = len(scores)
+    st.markdown('<div class="ketu-hero"><div class="ketu-logo">INTERVIEW COMPLETE</div></div>', unsafe_allow_html=True)
+    
+    avg_score = sum(s.get("score", 0) for s in st.session_state.scores) / len(st.session_state.scores)
+    
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Final Grade", f"{avg_score:.1f}/10")
+    c2.metric("Questions", len(st.session_state.questions))
+    c3.metric("Time", f"{int((time.time() - st.session_state.session_start)/60)}m")
 
-    if not scores:
-        st.warning("No data to show.")
-        if st.button("← Back"):
-            st.session_state.screen = "setup"
-            st.rerun()
-        return
+    st.markdown("### Performance Breakdown")
+    for i, item in enumerate(st.session_state.feedback_list):
+        with st.expander(f"Q{i+1}: {item['q'][:60]}..."):
+            st.write(f"**Your Answer:** {item['a']}")
+            st.info(f"**AI Feedback:** {item['eval']['suggestion']}")
 
-    avg   = sum(s["Score"] for s in scores) / n
-    best  = max(s["Score"] for s in scores)
-    worst = min(s["Score"] for s in scores)
-    total_time = int(time.time() - st.session_state.session_start) if st.session_state.session_start else 0
-    mins, secs = divmod(total_time, 60)
-    avg_time = round(sum(st.session_state.time_per_q) / len(st.session_state.time_per_q), 1) if st.session_state.time_per_q else 0
-
-    # Grade
-    if avg >= 8.5: grade, gcol, gverdict = "S", "#ffd700", "Outstanding"
-    elif avg >= 7:  grade, gcol, gverdict = "A", "#00e5a0", "Excellent"
-    elif avg >= 5.5:grade, gcol, gverdict = "B", "#00d4ff", "Good"
-    elif avg >= 4:  grade, gcol, gverdict = "C", "#ffb700", "Average"
-    else:            grade, gcol, gverdict = "D", "#ff4d6d", "Needs Improvement"
-
-    name = st.session_state.candidate_name or "Candidate"
-    role = st.session_state.role_title
-
-    # Verdict banner
-    st.markdown(f"""
-    <div class="verdict-banner">
-        <div class="verdict-grade" style="color:{gcol};text-shadow:0 0 60px {gcol}66">{grade}</div>
-        <div style="font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:600;margin-top:0.3rem">
-            {gverdict} Performance
-        </div>
-        <div style="font-family:'JetBrains Mono',monospace;color:var(--muted);font-size:0.82rem;margin-top:0.5rem">
-            {name} · {role} · {datetime.now().strftime('%d %b %Y, %H:%M')}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Key metrics
-    m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("🏆 Avg Score",   f"{avg:.1f}/10")
-    m2.metric("⬆️ Best",        f"{best:.0f}/10")
-    m3.metric("⬇️ Lowest",      f"{worst:.0f}/10")
-    m4.metric("⏱ Session",      f"{mins}m {secs}s")
-    m5.metric("📊 Avg/Q",       f"{avg_time}s")
-
-    st.markdown("---")
-
-    # Charts
-    c_left, c_right = st.columns(2, gap="large")
-    with c_left:
-        df = pd.DataFrame(scores)
-        fig = go.Figure()
-        # Area fill
-        fig.add_trace(go.Scatter(
-            x=df["Question"], y=df["Score"],
-            fill="tozeroy",
-            fillcolor="rgba(0,212,255,0.06)",
-            line=dict(color="#00d4ff", width=2.5),
-            mode="lines+markers",
-            marker=dict(size=9, color="#00d4ff", line=dict(width=2, color="#fff")),
-            name="Score",
-        ))
-        # 7-point benchmark
-        fig.add_hline(y=7, line=dict(color="#7b2fff", dash="dot", width=1.5),
-                      annotation_text="Target (7)", annotation_font_color="#7b2fff")
-        fig.update_layout(
-            title="Performance Trend", yaxis_range=[0, 10],
-            **PLOTLY_LAYOUT,
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
-    with c_right:
-        verdict_counts = {}
-        for s in scores:
-            v = s["Verdict"]
-            verdict_counts[v] = verdict_counts.get(v, 0) + 1
-        vc_df = pd.DataFrame(list(verdict_counts.items()), columns=["Verdict", "Count"])
-        color_map = {
-            "Excellent":    "#00e5a0",
-            "Good":         "#00d4ff",
-            "Average":      "#ffb700",
-            "Needs Work":   "#ff4d6d",
-            "Skipped":      "#4a5a7a",
-        }
-        fig2 = px.pie(
-            vc_df, names="Verdict", values="Count",
-            color="Verdict",
-            color_discrete_map=color_map,
-            hole=0.55,
-            title="Answer Quality Distribution",
-        )
-        fig2.update_traces(textfont_color="#e2eaf8")
-        fig2.update_layout(**PLOTLY_LAYOUT)
-        st.plotly_chart(fig2, use_container_width=True)
-
-    # Radar chart — scoring by question
-    st.markdown('<div class="section-label">📈 Score Radar</div>', unsafe_allow_html=True)
-    theta = [f"Q{s['Question']}" for s in scores]
-    r_vals = [s["Score"] for s in scores]
-    fig3 = go.Figure(go.Scatterpolar(
-        r=r_vals + [r_vals[0]],
-        theta=theta + [theta[0]],
-        fill="toself",
-        fillcolor="rgba(123,47,255,0.12)",
-        line=dict(color="#7b2fff", width=2),
-        marker=dict(color="#00d4ff", size=7),
-    ))
-    fig3.update_layout(
-        polar=dict(
-            bgcolor="rgba(0,0,0,0)",
-            radialaxis=dict(visible=True, range=[0, 10], color="#4a5a7a",
-                            gridcolor="#1a2540", tickfont=dict(color="#4a5a7a")),
-            angularaxis=dict(color="#4a5a7a", gridcolor="#1a2540"),
-        ),
-        showlegend=False,
-        **PLOTLY_LAYOUT,
-    )
-    st.plotly_chart(fig3, use_container_width=True)
-
-    st.markdown("---")
-
-    # Per-question breakdown
-    st.markdown('<div class="section-label">📋 Full Breakdown</div>', unsafe_allow_html=True)
-    st.markdown('<div class="panel">', unsafe_allow_html=True)
-    for i, (s, fb) in enumerate(zip(scores, feedbacks)):
-        score_val   = s["Score"]
-        score_class = "score-high" if score_val >= 7 else "score-mid" if score_val >= 5 else "score-low"
-        icon        = "✅" if score_val >= 7 else "⚠️" if score_val >= 5 else "❌"
-        t           = st.session_state.time_per_q[i] if i < len(st.session_state.time_per_q) else "—"
-        st.markdown(f"""
-        <div style="border-bottom:1px solid var(--border);padding:0.9rem 0;display:flex;
-                    justify-content:space-between;align-items:flex-start;gap:1rem">
-            <div>
-                <div style="font-weight:600;font-size:0.93rem">{icon} Q{s['Question']}: {s['Q_text']}</div>
-                <div style="font-size:0.82rem;color:var(--muted);margin-top:0.3rem">{fb.get('suggestion','')}</div>
-            </div>
-            <div style="white-space:nowrap;text-align:right">
-                <span class="score-pill {score_class}" style="font-size:0.78rem">{score_val}/10</span>
-                <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem">{t}s</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # AI Overall Summary
-    llm = get_llm()
-    if llm and st.button("🤖 Generate AI Interview Report", use_container_width=True):
-        with st.spinner("Writing full report…"):
-            qa_pairs = "\n".join(
-                f"Q{s['Question']}: {s['Q_text']} → Score {s['Score']}/10, Verdict: {s['Verdict']}"
-                for s in scores
-            )
-            summary_prompt = f"""
-You are a senior hiring manager writing a post-interview assessment for {name} applying for {role}.
-
-Session Results:
-{qa_pairs}
-Average Score: {avg:.1f}/10
-Grade: {grade} ({gverdict})
-
-Write a professional 3-paragraph interview assessment:
-1. Overall impression and key strengths
-2. Areas that need development
-3. Hiring recommendation with reasoning
-
-Be specific, professional, and constructive.
-"""
-            resp = llm.invoke(summary_prompt)
-            st.markdown('<div class="feedback-card">', unsafe_allow_html=True)
-            st.markdown("### 📝 AI Interview Report")
-            st.write(resp.content)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("🔄  New Interview", use_container_width=True):
-            for k in list(st.session_state.keys()):
-                del st.session_state[k]
-            st.rerun()
-    with c2:
-        if st.button("⚙️  Change Settings", use_container_width=True):
-            st.session_state.screen  = "setup"
-            st.session_state.started = False
-            st.rerun()
-
+    if st.button("Start New Interview"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.rerun()
 
 # ============================================================
 # SIDEBAR
@@ -1225,10 +923,9 @@ with st.sidebar:
 # ============================================================
 # ROUTER
 # ============================================================
-screen = st.session_state.screen
-if screen == "setup":
+if st.session_state.screen == "setup":
     screen_setup()
-elif screen == "interview":
+elif st.session_state.screen == "interview":
     screen_interview()
-elif screen == "results":
+elif st.session_state.screen == "results":
     screen_results()
