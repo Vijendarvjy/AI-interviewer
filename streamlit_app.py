@@ -848,7 +848,9 @@ def screen_interview():
                 tts_autoplay(q)
         with c_btn2:
             if st.session_state.scores:
-                last_score = st.session_state.scores[-1]["score"]
+                last_score = st.session_state.scores[-1].get("score", 0)
+            else:
+                last_score = 0   
                 color = "#00e5a0" if last_score >= 7 else "#ffb700" if last_score >= 5 else "#ff4d6d"
                 st.markdown(
                     f'<div class="stat-chip" style="color:{color}">Last: {last_score}/10</div>',
