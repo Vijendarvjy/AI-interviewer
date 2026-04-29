@@ -804,7 +804,7 @@ def screen_interview():
         st.progress(pct)
         st.caption(f"Question {idx + 1} of {n}  ·  {int(pct*100)}% complete")
     with sb2:
-        avg = (sum(s["score"] for s in st.session_state.scores) / len(st.session_state.scores)) if st.session_state.scores else 0
+        avg = (sum(s.get("score", 0) for s in st.session_state.scores) / len(st.session_state.scores)) if st.session_state.scores else 0
         st.metric("Avg Score", f"{avg:.1f}/10" if st.session_state.scores else "—")
     with sb3:
         total_elapsed = int(time.time() - st.session_state.session_start) if st.session_state.session_start else 0
