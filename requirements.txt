@@ -11,5 +11,17 @@ pandas>=2.2.0
 pypdf>=4.2.0
 docx2txt>=0.8
 audio-recorder-streamlit>=0.0.8
-# optional — remove if mic_recorder not needed:
-# streamlit-mic-recorder>=0.0.4
+openai
+streamlit
+pandas
+plotly
+gtts
+sentence-transformers
+langchain-groq
+langchain-community
+langchain-core
+docx2txt
+pypdf
+faiss-cpu
+audio-recorder-streamlit
+streamlit-mic-recorder
