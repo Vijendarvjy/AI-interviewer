@@ -20,6 +20,8 @@ torch.classes = _TorchClassesPatch()
 
 # ── Standard library ───────────────────────────────────────
 import re
+import io
+from openai import OpenAI
 import time
 import base64
 import tempfile
@@ -500,16 +502,29 @@ init_state()
 # API & MODEL SETUP
 # ============================================================
 @st.cache_resource(show_spinner=False)
-def get_llm():
-    api_key = st.secrets.get("GROQ_API_KEY", os.environ.get("GROQ_API_KEY", ""))
-    if not api_key:
+# Initialize the OpenAI client (ensure your API key is in st.secrets)
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+def transcribe_voice(audio_bytes):
+    """Sends audio bytes to OpenAI Whisper and returns the text."""
+    if not audio_bytes:
         return None
-    return ChatGroq(
-        groq_api_key=api_key,
-        model_name="llama-3.3-70b-versatile",
-        temperature=0.7,
-        max_tokens=2048,
-    )
+        
+    try:
+        # Whisper requires a file object with a proper file name extension
+        audio_file = io.BytesIO(audio_bytes)
+        audio_file.name = "interview_response.wav" 
+        
+        # Call the Whisper API
+        response = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file
+        )
+        return response.text
+        
+    except Exception as e:
+        st.error(f"Failed to transcribe audio: {e}")
+        return None
 
 @st.cache_resource(show_spinner=False)
 def get_embeddings():
