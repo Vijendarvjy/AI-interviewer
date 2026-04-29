@@ -1,4 +1,5 @@
 streamlit==1.44.1
+groq==0.24.0
 pandas==2.2.3
 numpy==2.2.5
 plotly==5.24.1
