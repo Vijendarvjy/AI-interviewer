@@ -556,7 +556,21 @@ def tts_autoplay(text: str):
         )
     except Exception as e:
         st.caption(f"⚠️ TTS unavailable: {e}")
-
+# ============================================================
+# TRANSCRIPTION (Whisper via OpenAI)
+# ============================================================
+def transcribe_voice(audio_bytes: bytes) -> str:
+    try:
+        buf = io.BytesIO(audio_bytes)
+        buf.name = "audio.wav"  # Whisper needs a filename with extension
+        transcript = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=buf,
+        )
+        return transcript.text.strip()
+    except Exception as e:
+        st.warning(f"⚠️ Transcription failed: {e}")
+        return ""
 
 # ============================================================
 # DOCUMENT LOADER
@@ -903,7 +917,7 @@ with st.sidebar:
         st.metric("Progress", f"{q_idx}/{n_q}")
         st.progress(q_idx / n_q if n_q else 0)
         if st.session_state.scores:
-            avg = sum(s["Score"] for s in st.session_state.scores) / len(st.session_state.scores)
+            avg = sum(s["score"] for s in st.session_state.scores) / len(st.session_state.scores)
             st.metric("Running Avg", f"{avg:.1f}/10")
         st.markdown("---")
 
