@@ -731,7 +731,7 @@ def init_state():
         "tts_enabled":      True,
         "submitted":        False,
         "current_feedback": None,
-        "nova_message":     "",
+        "Ketu_message":     "",
         "is_followup":      False,
         "followup_count":   0,
         "transcript":       [],   # full conversation log
@@ -826,7 +826,7 @@ def load_document(uploaded_file) -> str:
 # QUESTION GENERATION (with types)
 # ============================================================
 def generate_questions(jd: str, resume: str, role: str, n: int, llm) -> tuple[list[str], list[str]]:
-    prompt = f"""You are Nova, a senior AI interviewer at KETU. You are preparing for a {role} interview.
+    prompt = f"""You are Ketu, a senior AI interviewer at KETU. You are preparing for a {role} interview.
 
 JOB DESCRIPTION:
 {jd[:2500]}
@@ -885,7 +885,7 @@ Types must be one of: rapport, technical, behavioral, situational, ambition
 # ADVANCED ANSWER EVALUATION
 # ============================================================
 def evaluate_answer(question: str, answer: str, role: str, q_type: str, llm) -> dict:
-    prompt = f"""You are Nova, an elite AI interviewer evaluating a {role} candidate.
+    prompt = f"""You are Ketu, an elite AI interviewer evaluating a {role} candidate.
 Question type: {q_type}
 
 QUESTION: {question}
@@ -902,7 +902,7 @@ Evaluate with nuance and precision. Return ONLY this JSON (no markdown):
   "tone_signals": ["<signal1>", "<signal2>", "<signal3>"],
   "needs_followup": <true|false>,
   "followup_question": "<a natural follow-up question if score < 6 or answer was vague, else empty string>",
-  "nova_reaction": "<1 short sentence Nova would naturally say after this answer, in first person, conversational>"
+  "Ketu_reaction": "<1 short sentence Ketu would naturally say after this answer, in first person, conversational>"
 }}
 
 tone_signals: pick 3 from [Confident, Structured, Vague, Concise, Detailed, Nervous, Passionate, Hesitant, Analytical, Creative, Experienced, Rambling, Thoughtful, Unprepared]
@@ -926,7 +926,7 @@ tone_signals: pick 3 from [Confident, Structured, Vague, Concise, Detailed, Nerv
             "tone_signals": ["Thoughtful"],
             "needs_followup": False,
             "followup_question": "",
-            "nova_reaction": "Thanks for sharing that.",
+            "Ketu_reaction": "Thanks for sharing that.",
         }
         sm = re.search(r'"score"\s*:\s*([\d.]+)', content)
         if sm:
@@ -941,7 +941,7 @@ def generate_summary(feedback_list: list, role: str, candidate_name: str, avg_sc
         f"Q{i+1}: {item['q']}\nAnswer: {item['a'][:300]}...\nScore: {item['eval']['score']}/10 — {item['eval']['verdict']}"
         for i, item in enumerate(feedback_list)
     ])
-    prompt = f"""You are Nova, a senior AI interviewer. Write a professional post-interview assessment for {candidate_name or 'the candidate'} applying for {role}.
+    prompt = f"""You are Ketu, a senior AI interviewer. Write a professional post-interview assessment for {candidate_name or 'the candidate'} applying for {role}.
 
 Interview data:
 {qa_pairs}
@@ -1005,7 +1005,7 @@ def screen_setup():
     <div class="hero-wrap">
         <div class="hero-eyebrow">⚡ AI-Powered · Adaptive · Real-Time</div>
         <div class="hero-title">KETU AI</div>
-        <p class="hero-sub">Meet Nova — your elite AI interviewer. She adapts in real-time, reads between the lines, and gives you feedback that actually matters.</p>
+        <p class="hero-sub">Meet Ketu — your elite AI interviewer. She adapts in real-time, reads between the lines, and gives you feedback that actually matters.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1014,16 +1014,16 @@ def screen_setup():
         st.error("⚠️ `GROQ_API_KEY` not found. Add it to `.streamlit/secrets.toml`.")
         return
 
-    # Nova intro card
+    # Ketu intro card
     st.markdown(f"""
     <div class="interviewer-wrap">
         <div class="avatar-ring">🤖</div>
         <div>
-            <div class="interviewer-name">Nova · AI Interviewer</div>
+            <div class="interviewer-name">Ketu · AI Interviewer</div>
             <div class="interviewer-status"><span class="status-dot"></span> Ready to interview</div>
         </div>
         <div class="interviewer-speech">
-            "Hello! I'm Nova, your AI interviewer. I'll personalise every question to your background and the role you're applying for. Fill in the details below and we'll begin — I promise to make this worth your time."
+            "Hello! I'm Ketu, your AI interviewer. I'll personalise every question to your background and the role you're applying for. Fill in the details below and we'll begin — I promise to make this worth your time."
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1061,14 +1061,14 @@ def screen_setup():
 
         st.markdown("""
         <div class="tip-box">
-        💡 Nova will ask adaptive follow-up questions if your answer needs more depth.
+        💡 Ketu will ask adaptive follow-up questions if your answer needs more depth.
         Voice recording uses Groq's Whisper — speak clearly for best results.
         </div>
         """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🚀  Begin Interview with Nova", use_container_width=True):
+        if st.button("🚀  Begin Interview with Ketu", use_container_width=True):
             if not st.session_state.jd_text.strip():
                 st.error("Please paste a job description.")
             elif not st.session_state.resume_text.strip():
@@ -1076,7 +1076,7 @@ def screen_setup():
             elif not st.session_state.role_title.strip():
                 st.error("Please enter the role / job title.")
             else:
-                with st.spinner("🤖 Nova is reviewing your profile and crafting questions…"):
+                with st.spinner("🤖 Ketu is reviewing your profile and crafting questions…"):
                     qs, types = generate_questions(
                         st.session_state.jd_text,
                         st.session_state.resume_text,
@@ -1097,7 +1097,7 @@ def screen_setup():
                     st.session_state.session_start = time.time()
                     st.session_state.q_start       = time.time()
                     st.session_state.submitted     = False
-                    st.session_state.nova_message  = greeting
+                    st.session_state.Ketu_message  = greeting
                     st.session_state.is_followup   = False
                     st.session_state.followup_count= 0
                     st.session_state.transcript    = []
@@ -1141,9 +1141,9 @@ def screen_interview():
 
     st.markdown("---")
 
-    # ── Nova avatar + speech ─────────────────────────────────
-    nova_msg = st.session_state.get("nova_message", "")
-    speaking_class = "speaking" if nova_msg else ""
+    # ── Ketu avatar + speech ─────────────────────────────────
+    Ketu_msg = st.session_state.get("Ketu_message", "")
+    speaking_class = "speaking" if Ketu_msg else ""
     is_followup = st.session_state.get("is_followup", False)
 
     st.markdown(f"""
@@ -1153,14 +1153,14 @@ def screen_interview():
             <div class="interviewer-name">{INTERVIEWER['name']}</div>
             <div class="interviewer-status"><span class="status-dot"></span> {INTERVIEWER['title']}</div>
         </div>
-        <div class="interviewer-speech">"{nova_msg or 'Ready for your answer…'}"</div>
+        <div class="interviewer-speech">"{Ketu_msg or 'Ready for your answer…'}"</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # TTS for nova message
-    if nova_msg and f"tts_done_{idx}_{nova_msg[:20]}" not in st.session_state:
-        tts_autoplay(nova_msg)
-        st.session_state[f"tts_done_{idx}_{nova_msg[:20]}"] = True
+    # TTS for Ketu message
+    if Ketu_msg and f"tts_done_{idx}_{Ketu_msg[:20]}" not in st.session_state:
+        tts_autoplay(Ketu_msg)
+        st.session_state[f"tts_done_{idx}_{Ketu_msg[:20]}"] = True
 
     # ── Question card ─────────────────────────────────────────
     if is_followup:
@@ -1226,7 +1226,7 @@ def screen_interview():
             st.session_state.current   += 1
             st.session_state.submitted  = False
             st.session_state.is_followup = False
-            st.session_state.nova_message = transition
+            st.session_state.Ketu_message = transition
             st.session_state.q_start = time.time()
             st.rerun()
 
@@ -1234,12 +1234,12 @@ def screen_interview():
             if not ans.strip():
                 st.warning("Please provide an answer before submitting.")
             else:
-                with st.spinner("Nova is analysing your response…"):
+                with st.spinner("Ketu is analysing your response…"):
                     eval_res = evaluate_answer(q, ans, st.session_state.role_title, q_type, llm)
 
                 # Track transcript
                 st.session_state.transcript.append({"role": "user", "content": ans, "q": q})
-                st.session_state.transcript.append({"role": "nova", "content": eval_res.get("nova_reaction", "")})
+                st.session_state.transcript.append({"role": "Ketu", "content": eval_res.get("Ketu_reaction", "")})
 
                 # Only count non-followup to main scores
                 if not is_followup:
@@ -1274,10 +1274,10 @@ def screen_interview():
         sc = f.get("score", 5.0)
         sc_class = score_class(sc)
         tones = f.get("tone_signals", [])
-        nova_react = f.get("nova_reaction", "")
+        Ketu_react = f.get("Ketu_reaction", "")
 
-        # Nova reaction
-        if nova_react:
+        # Ketu reaction
+        if Ketu_react:
             st.markdown(f"""
             <div class="interviewer-wrap">
                 <div class="avatar-ring">{INTERVIEWER['avatar']}</div>
@@ -1285,11 +1285,11 @@ def screen_interview():
                     <div class="interviewer-name">{INTERVIEWER['name']}</div>
                     <div class="interviewer-status"><span class="status-dot"></span> Feedback</div>
                 </div>
-                <div class="interviewer-speech">"{nova_react}"</div>
+                <div class="interviewer-speech">"{Ketu_react}"</div>
             </div>
             """, unsafe_allow_html=True)
             if f"tts_react_{idx}" not in st.session_state:
-                tts_autoplay(nova_react)
+                tts_autoplay(Ketu_react)
                 st.session_state[f"tts_react_{idx}"] = True
 
         # Score + verdict
@@ -1335,7 +1335,7 @@ def screen_interview():
                     st.session_state.is_followup  = True
                     st.session_state.followup_count += 1
                     st.session_state._pending_followup = False
-                    st.session_state.nova_message = f"I'd like to dig deeper. {fq}"
+                    st.session_state.Ketu_message = f"I'd like to dig deeper. {fq}"
                     st.session_state.q_start = time.time()
                     st.rerun()
             with col2:
@@ -1345,7 +1345,7 @@ def screen_interview():
                     st.session_state.submitted   = False
                     st.session_state.is_followup = False
                     st.session_state._pending_followup = False
-                    st.session_state.nova_message = transition
+                    st.session_state.Ketu_message = transition
                     st.session_state.q_start = time.time()
                     st.rerun()
         else:
@@ -1356,7 +1356,7 @@ def screen_interview():
                 st.session_state.submitted    = False
                 st.session_state.is_followup  = False
                 st.session_state._pending_followup = False
-                st.session_state.nova_message = transition
+                st.session_state.Ketu_message = transition
                 st.session_state.q_start = time.time()
                 st.rerun()
 
@@ -1507,9 +1507,9 @@ def screen_results():
             st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
 
         # AI summary
-        st.markdown('<div class="sec-label">🤖 Nova\'s Assessment</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sec-label">🤖 Ketu\'s Assessment</div>', unsafe_allow_html=True)
         if "ai_summary" not in st.session_state:
-            with st.spinner("Nova is writing your assessment…"):
+            with st.spinner("Ketu is writing your assessment…"):
                 st.session_state.ai_summary = generate_summary(feedback_list, role, name, avg_score, llm)
         st.markdown(f"""
         <div class="panel panel-glow-violet">
@@ -1568,7 +1568,7 @@ with st.sidebar:
             st.metric("Grade", grade_letter(avg))
 
     st.markdown("---")
-    st.markdown("##### ⚡ Nova's Capabilities")
+    st.markdown("##### ⚡ Ketu's Capabilities")
     st.markdown("""
 - 🧠 Adaptive follow-up questions
 - 🎙️ Voice input via Groq Whisper
