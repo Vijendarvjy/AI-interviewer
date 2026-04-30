@@ -21,7 +21,6 @@ torch.classes = _TorchClassesPatch()
 # ── Standard library ───────────────────────────────────────
 import re
 import io
-from openai import OpenAI
 import time
 import base64
 import tempfile
@@ -512,12 +511,6 @@ def get_llm():
         )
     except Exception as e:
         return None
-
-# OpenAI Client for Whisper
-if "OPENAI_API_KEY" in st.secrets:
-    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-else:
-    st.error("Missing OPENAI_API_KEY in secrets.")
 @st.cache_resource(show_spinner=False)
 def get_embeddings():
     class LocalEmbeddings:
@@ -561,17 +554,20 @@ def tts_autoplay(text: str):
 # ============================================================
 def transcribe_voice(audio_bytes: bytes) -> str:
     try:
+        from groq import Groq
+        groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+        
         buf = io.BytesIO(audio_bytes)
-        buf.name = "audio.wav"  # Whisper needs a filename with extension
-        transcript = client.audio.transcriptions.create(
-            model="whisper-1",
+        buf.name = "audio.wav"
+        
+        transcript = groq_client.audio.transcriptions.create(
+            model="whisper-large-v3-turbo",  # fast & free tier friendly
             file=buf,
         )
         return transcript.text.strip()
     except Exception as e:
         st.warning(f"⚠️ Transcription failed: {e}")
         return ""
-
 # ============================================================
 # DOCUMENT LOADER
 # ============================================================
