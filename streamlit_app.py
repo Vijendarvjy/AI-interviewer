@@ -678,7 +678,7 @@ WAVEFORM_HTML = """
 # INTERVIEWER PERSONA
 # ============================================================
 INTERVIEWER = {
-    "name": "Nova",
+    "name": "Ketu",
     "title": "Senior AI Interviewer · KETU",
     "avatar": "🤖",
     "greetings": [
