@@ -1425,7 +1425,7 @@ def screen_results():
                 name="Score",
             ))
             fig_line.add_hline(y=avg_score, line_dash="dot", line_color="rgba(0,229,255,0.4)", annotation_text=f"avg {avg_score:.1f}")
-            fig_line.update_layout(**PLOTLY_LAYOUT, height=250, showlegend=False, yaxis=dict(range=[0,10.5], gridcolor="#162035", zerolinecolor="#162035"), xaxis=dict(gridcolor="#162035"))
+            fig_line.update_layout(**{**PLOTLY_LAYOUT,"height": 250,"showlegend": False,"yaxis": {**PLOTLY_LAYOUT.get("yaxis", {}), "range": [0, 10.5], "gridcolor": "#162035", "zerolinecolor": "#162035"},"xaxis": {**PLOTLY_LAYOUT.get("xaxis", {}), "gridcolor": "#162035"},})
             st.plotly_chart(fig_line, use_container_width=True, config={"displayModeBar": False})
 
         # Q-by-Q breakdown
