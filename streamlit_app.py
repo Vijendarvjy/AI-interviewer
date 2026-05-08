@@ -661,8 +661,8 @@ PERSONAS = {
             "Thank you. Here's my next question for you.",
         ],
     },
-    "Hard": {
-        "name": "Hard",
+    "Aria": {
+        "name": "Aria",
         "title": "Technical Director · KETU",
         "avatar": "🧬",
         "style": "technical, precise, and deeply analytical",
@@ -676,8 +676,8 @@ PERSONAS = {
             "Understood. Moving on.",
         ],
     },
-    "difficult": {
-        "name": "difficult",
+    "Marcus": {
+        "name": "Marcus",
         "title": "Culture Lead · KETU",
         "avatar": "🌿",
         "style": "empathetic, culture-focused, and people-oriented",
