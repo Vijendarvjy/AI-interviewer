@@ -1303,7 +1303,171 @@ def screen_setup():
                     st.session_state.ai_summary        = None
                     st.session_state.screen            = "interview"
                     st.rerun()
+def camera_panel():
+    import streamlit.components.v1 as components
+    components.html("""
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background: transparent; font-family: 'Cabinet Grotesk', sans-serif; }
+      #wrap {
+        background: #050b12; border: 1px solid #111e30;
+        border-radius: 16px; overflow: hidden; position: relative;
+      }
+      #topbar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.5rem 0.9rem;
+        background: rgba(0,0,0,0.4);
+        border-bottom: 1px solid #111e30;
+      }
+      .rec-dot { width: 7px; height: 7px; border-radius: 50%; background: #f43f5e;
+        animation: blink 1s ease infinite; display: inline-block; margin-right: 6px; }
+      @keyframes blink { 0%,100%{opacity:1}50%{opacity:0.2} }
+      #label { font-size: 11px; color: #f43f5e; letter-spacing: 0.12em; font-family: monospace; }
+      #hint-badge {
+        font-size: 11px; font-family: monospace; letter-spacing: 0.06em;
+        padding: 2px 8px; border-radius: 99px;
+        background: rgba(0,229,255,0.08); color: rgba(0,229,255,0.6);
+        border: 1px solid rgba(0,229,255,0.18);
+      }
+      #video-wrap { position: relative; width: 100%; background: #010306; }
+      video { width: 100%; display: block; transform: scaleX(-1); }
+      #overlay {
+        position: absolute; inset: 0; pointer-events: none;
+      }
+      #face-ring {
+        position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -55%);
+        width: 90px; height: 110px;
+        border: 1.5px solid rgba(0,229,255,0.25); border-radius: 50%;
+      }
+      #corner-tl, #corner-tr, #corner-bl, #corner-br {
+        position: absolute; width: 14px; height: 14px;
+      }
+      #corner-tl { top: 8px; left: 8px; border-top: 1.5px solid rgba(0,229,255,0.45); border-left: 1.5px solid rgba(0,229,255,0.45); }
+      #corner-tr { top: 8px; right: 8px; border-top: 1.5px solid rgba(0,229,255,0.45); border-right: 1.5px solid rgba(0,229,255,0.45); }
+      #corner-bl { bottom: 8px; left: 8px; border-bottom: 1.5px solid rgba(0,229,255,0.45); border-left: 1.5px solid rgba(0,229,255,0.45); }
+      #corner-br { bottom: 8px; right: 8px; border-bottom: 1.5px solid rgba(0,229,255,0.45); border-right: 1.5px solid rgba(0,229,255,0.45); }
+      #scan-line {
+        position: absolute; left: 0; right: 0; height: 1px;
+        background: rgba(0,229,255,0.18);
+        animation: scan 3.5s linear infinite;
+      }
+      @keyframes scan { 0%{top:0%} 100%{top:100%} }
+      #botbar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.55rem 0.9rem; background: rgba(0,0,0,0.5);
+        border-top: 1px solid #111e30; gap: 8px;
+      }
+      #snap-btn {
+        background: transparent; border: 1px solid rgba(0,229,255,0.3);
+        color: rgba(0,229,255,0.7); border-radius: 8px; font-size: 11px;
+        font-family: monospace; padding: 4px 12px; cursor: pointer;
+        letter-spacing: 0.08em; transition: all 0.2s;
+      }
+      #snap-btn:hover { background: rgba(0,229,255,0.07); border-color: rgba(0,229,255,0.6); color: #00e5ff; }
+      #tip-text { font-size: 11px; font-family: monospace; color: rgba(139,92,246,0.6); flex: 1; text-align: right; }
+      #no-cam {
+        display: none; padding: 2.5rem 1rem; text-align: center;
+        font-size: 12px; color: rgba(0,229,255,0.35); font-family: monospace;
+        letter-spacing: 0.08em; line-height: 2;
+      }
+      #snapshot-strip { display: none; padding: 0.5rem; background: rgba(0,0,0,0.3); }
+      #snapshot-strip img { width: 56px; height: 42px; object-fit: cover;
+        border-radius: 4px; border: 1px solid #182840; margin-right: 4px;
+        display: inline-block; }
+      #canvas { display: none; }
+    </style>
 
+    <div id="wrap">
+      <div id="topbar">
+        <div><span class="rec-dot"></span><span id="label">LIVE · CAMERA ON</span></div>
+        <span id="hint-badge" id="badge">Initialising…</span>
+      </div>
+      <div id="video-wrap">
+        <video id="vid" autoplay playsinline muted></video>
+        <div id="overlay">
+          <div id="face-ring"></div>
+          <div id="corner-tl"></div><div id="corner-tr"></div>
+          <div id="corner-bl"></div><div id="corner-br"></div>
+          <div id="scan-line"></div>
+        </div>
+        <div id="no-cam">📷<br>Camera access denied<br>or not available.</div>
+      </div>
+      <div id="botbar">
+        <button id="snap-btn">⊙ Snapshot</button>
+        <span id="tip-text">Maintain eye contact · Sit upright</span>
+      </div>
+      <div id="snapshot-strip"></div>
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+      const vid = document.getElementById('vid');
+      const badge = document.getElementById('hint-badge');
+      const tipText = document.getElementById('tip-text');
+      const noCAM = document.getElementById('no-cam');
+      const snapBtn = document.getElementById('snap-btn');
+      const strip = document.getElementById('snapshot-strip');
+      const canvas = document.getElementById('canvas');
+
+      const TIPS = [
+        "Maintain steady eye contact",
+        "Sit upright — good posture signals confidence",
+        "Speak to the camera, not the screen",
+        "Nod occasionally to show active listening",
+        "Keep a neutral, engaged expression",
+        "Breathe steadily before answering",
+        "Avoid excessive hand gestures near face",
+        "Smile naturally — warmth matters",
+      ];
+      const BADGES = [
+        "Analysing posture…",
+        "Eye contact: good",
+        "Posture: upright",
+        "Expression: engaged",
+        "Presence: confident",
+        "Focus: on-point",
+        "Composure: steady",
+        "Energy: positive",
+      ];
+
+      let tipIdx = 0, badgeIdx = 0;
+
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }, audio: false })
+        .then(stream => {
+          vid.srcObject = stream;
+          vid.style.display = 'block';
+          noCAM.style.display = 'none';
+          badge.textContent = BADGES[0];
+          setInterval(() => { badge.textContent = BADGES[badgeIdx++ % BADGES.length]; }, 4200);
+          setInterval(() => { tipText.textContent = TIPS[tipIdx++ % TIPS.length]; }, 5500);
+        })
+        .catch(() => {
+          vid.style.display = 'none';
+          noCAM.style.display = 'block';
+          badge.textContent = 'Camera unavailable';
+        });
+
+      snapBtn.addEventListener('click', () => {
+        if (!vid.srcObject) return;
+        canvas.width = vid.videoWidth || 320;
+        canvas.height = vid.videoHeight || 240;
+        const ctx = canvas.getContext('2d');
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(vid, 0, 0);
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/jpeg', 0.7);
+        img.title = new Date().toLocaleTimeString();
+        strip.style.display = 'block';
+        strip.insertBefore(img, strip.firstChild);
+        if (strip.querySelectorAll('img').length > 5)
+          strip.removeChild(strip.lastChild);
+        snapBtn.textContent = '✓ Saved';
+        setTimeout(() => snapBtn.textContent = '⊙ Snapshot', 1500);
+      });
+    </script>
+    """, height=330, scrolling=False)
 # ============================================================
 # SCREEN — INTERVIEW
 # ============================================================
@@ -1353,6 +1517,12 @@ def screen_interview():
 
     st.markdown("---")
 
+    # Camera monitor panel
+    if st.session_state.get("camera_enabled", False):
+        with st.sidebar:
+            st.markdown("---")
+            st.markdown('<div style="font-family:\'DM Mono\',monospace;font-size:0.65rem;color:#2d4464;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.5rem">📷 Camera Monitor</div>', unsafe_allow_html=True)
+            camera_panel()
     # ── Persona avatar ───────────────────────────────────────
     Ketu_msg = st.session_state.get("Ketu_message", "")
     is_followup = st.session_state.get("is_followup", False)
