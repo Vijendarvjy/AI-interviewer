@@ -1,6 +1,9 @@
 # ============================================================
-# CRITICAL ENV VARS — must be first, before any other imports
+# KETU AI v2.0 — ELITE INTERVIEW INTELLIGENCE
+# Upgraded: Enhanced UI, Analytics, Resume Analysis,
+# Question Bank, Session History, Performance Trends
 # ============================================================
+
 import os
 os.environ["STREAMLIT_SERVER_FILE_WATCHER_TYPE"] = "none"
 os.environ["TORCHDYNAMO_DISABLE"] = "1"
@@ -16,10 +19,10 @@ class _TorchClassesPatch:
 torch.classes = _TorchClassesPatch()
 
 # ── Standard library ───────────────────────────────────────
-import re, io, time, base64, tempfile, json, random, hashlib
+import re, io, time, base64, tempfile, json, random, hashlib, math
 from io import BytesIO
 from datetime import datetime
-from collections import Counter
+from collections import Counter, defaultdict
 
 # ── Third-party ────────────────────────────────────────────
 import streamlit as st
@@ -49,45 +52,66 @@ except ImportError:
 # PAGE CONFIG
 # ============================================================
 st.set_page_config(
-    page_title="KETU AI · Elite Interviewer",
-    page_icon="🎙️",
+    page_title="KETU AI · Elite Interviewer v2",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 # ============================================================
-# ADVANCED DESIGN SYSTEM
+# DESIGN SYSTEM v2 — Refined Dark Luxury
 # ============================================================
 DESIGN = """
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-    --bg:           #010306;
-    --surface:      #050b12;
-    --surface2:     #08111d;
-    --surface3:     #0c1828;
-    --border:       #111e30;
-    --border2:      #182840;
-    --border3:      #1f3555;
-    --cyan:         #00e5ff;
-    --cyan-dim:     rgba(0,229,255,0.6);
-    --violet:       #8b5cf6;
-    --violet-dim:   rgba(139,92,246,0.6);
-    --rose:         #f43f5e;
-    --emerald:      #10b981;
-    --amber:        #f59e0b;
+    /* Core palette — deep navy cosmos */
+    --bg:           #02040a;
+    --bg-elevated:  #060c18;
+    --surface:      #080f1f;
+    --surface2:     #0b1628;
+    --surface3:     #0f1e35;
+    --surface4:     #132442;
+
+    /* Borders */
+    --b1:           #0e1a2e;
+    --b2:           #14253e;
+    --b3:           #1a3050;
+    --b4:           #213c62;
+
+    /* Accent spectrum */
+    --electric:     #00d4ff;
+    --electric-dim: rgba(0,212,255,0.55);
+    --electric-ghost: rgba(0,212,255,0.08);
+    --neon:         #7c3aed;
+    --neon-dim:     rgba(124,58,237,0.55);
+    --neon-ghost:   rgba(124,58,237,0.08);
+    --plasma:       #f0abfc;
+    --fire:         #fb923c;
+    --acid:         #a3e635;
+    --crimson:      #fb2c36;
+    --jade:         #00c896;
     --gold:         #fbbf24;
-    --ice:          #e0f2fe;
-    --text:         #e8f0fe;
-    --text2:        #7a93bb;
-    --text3:        #2d4464;
-    --radius:       16px;
-    --radius-lg:    24px;
-    --radius-xl:    32px;
-    --glow-cyan:    0 0 80px rgba(0,229,255,0.08), 0 0 160px rgba(0,229,255,0.04);
-    --glow-violet:  0 0 80px rgba(139,92,246,0.08), 0 0 160px rgba(139,92,246,0.04);
-    --glow-rose:    0 0 80px rgba(244,63,94,0.08);
-    --glow-emerald: 0 0 60px rgba(16,185,129,0.12);
+    --silver:       #94a3b8;
+
+    /* Text */
+    --t1:           #f0f4ff;
+    --t2:           #8a9fc4;
+    --t3:           #3d5580;
+    --t4:           #1e3258;
+
+    /* Sizing */
+    --r1:           8px;
+    --r2:           12px;
+    --r3:           16px;
+    --r4:           24px;
+    --r5:           32px;
+
+    /* Glows */
+    --glow-e:   0 0 60px rgba(0,212,255,0.1), 0 0 120px rgba(0,212,255,0.05);
+    --glow-n:   0 0 60px rgba(124,58,237,0.1), 0 0 120px rgba(124,58,237,0.05);
+    --glow-c:   0 0 40px rgba(0,200,150,0.12);
+    --glow-r:   0 0 40px rgba(251,44,54,0.1);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -96,665 +120,713 @@ html, body,
 [data-testid="stAppViewContainer"],
 [data-testid="stMain"] {
     background: var(--bg) !important;
-    color: var(--text) !important;
-    font-family: 'Cabinet Grotesk', sans-serif !important;
+    color: var(--t1) !important;
+    font-family: 'Geist', sans-serif !important;
 }
 
+/* Multi-layer atmospheric background */
 [data-testid="stAppViewContainer"] {
     background:
-        radial-gradient(ellipse 100% 60% at 15% -5%,  rgba(0,229,255,0.04)  0%, transparent 55%),
-        radial-gradient(ellipse 70%  55% at 85% 105%, rgba(139,92,246,0.05) 0%, transparent 55%),
-        radial-gradient(ellipse 50%  50% at 50% 50%,  rgba(8,17,29,0.9)    0%, transparent 100%),
+        radial-gradient(ellipse 120% 50% at 0% -10%,  rgba(0,212,255,0.035)  0%, transparent 50%),
+        radial-gradient(ellipse 80%  60% at 100% 110%, rgba(124,58,237,0.04) 0%, transparent 50%),
+        radial-gradient(ellipse 60%  40% at 50% 50%,  rgba(6,12,24,0.6)     0%, transparent 100%),
         var(--bg) !important;
 }
 
-[data-testid="stHeader"], footer, #MainMenu { display: none !important; }
-[data-testid="stSidebar"] {
-    background: var(--surface) !important;
-    border-right: 1px solid var(--border) !important;
-}
-
-/* Dot-grid background */
+/* Fine grid overlay */
 [data-testid="stAppViewContainer"]::before {
     content: '';
-    position: fixed; inset: 0;
-    background-image: radial-gradient(circle, rgba(0,229,255,0.08) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none; z-index: 0; opacity: 0.4;
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+        linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.5;
 }
 
-/* Scanline overlay */
-[data-testid="stAppViewContainer"]::after {
-    content: '';
-    position: fixed; inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
-    pointer-events: none; z-index: 0;
+[data-testid="stHeader"], footer, #MainMenu { display: none !important; }
+
+[data-testid="stSidebar"] {
+    background: var(--bg-elevated) !important;
+    border-right: 1px solid var(--b2) !important;
 }
+[data-testid="stSidebar"] * { font-family: 'Geist', sans-serif !important; }
 
-/* ── Typography ── */
-h1,h2,h3 { font-family: 'Syne', sans-serif !important; }
-code,pre  { font-family: 'DM Mono', monospace !important; }
+/* ─── Typography ─── */
+h1, h2, h3 { font-family: 'Geist', sans-serif !important; font-weight: 800 !important; }
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: var(--surface); }
-::-webkit-scrollbar-thumb { background: var(--border3); border-radius: 99px; }
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--b4); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--electric-dim); }
 
-/* ── Buttons ── */
+/* ─── Buttons ─── */
 .stButton > button {
-    background: transparent !important;
-    border: 1px solid var(--border2) !important;
-    color: var(--text) !important;
-    border-radius: 12px !important;
-    font-family: 'Cabinet Grotesk', sans-serif !important;
-    font-weight: 700 !important;
-    font-size: 0.9rem !important;
-    padding: 0.65rem 1.6rem !important;
-    transition: all 0.25s cubic-bezier(0.16,1,0.3,1) !important;
-    letter-spacing: 0.02em !important;
-    position: relative !important;
-    overflow: hidden !important;
-}
-.stButton > button::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(0,229,255,0.04), transparent);
-    opacity: 0; transition: opacity 0.25s ease !important;
-}
-.stButton > button:hover {
-    border-color: var(--cyan) !important;
-    color: var(--cyan) !important;
-    box-shadow: 0 0 25px rgba(0,229,255,0.12), inset 0 0 20px rgba(0,229,255,0.03) !important;
-    transform: translateY(-2px) !important;
-}
-.stButton > button:hover::before { opacity: 1 !important; }
-.stButton > button:active { transform: translateY(0px) !important; }
-
-/* Primary button */
-button[kind="primary"], .stButton > button[data-testid*="primary"] {
-    background: linear-gradient(135deg, rgba(0,229,255,0.12), rgba(139,92,246,0.08)) !important;
-    border-color: rgba(0,229,255,0.4) !important;
-    color: var(--cyan) !important;
-}
-
-/* ── Text areas ── */
-.stTextArea textarea {
     background: var(--surface2) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 14px !important;
-    color: var(--text) !important;
-    font-family: 'DM Mono', monospace !important;
-    font-size: 0.875rem !important;
-    line-height: 1.65 !important;
-    transition: border-color 0.2s, box-shadow 0.2s !important;
-}
-.stTextArea textarea:focus {
-    border-color: rgba(0,229,255,0.4) !important;
-    box-shadow: 0 0 30px rgba(0,229,255,0.06), inset 0 1px 0 rgba(0,229,255,0.05) !important;
-    outline: none !important;
-}
-
-/* ── Inputs ── */
-.stTextInput input {
-    background: var(--surface2) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    color: var(--text) !important;
-    font-family: 'Cabinet Grotesk', sans-serif !important;
-    transition: border-color 0.2s, box-shadow 0.2s !important;
-}
-.stTextInput input:focus {
-    border-color: rgba(0,229,255,0.4) !important;
-    box-shadow: 0 0 20px rgba(0,229,255,0.06) !important;
-}
-
-/* ── Select ── */
-.stSelectbox > div > div {
-    background: var(--surface2) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    color: var(--text) !important;
-}
-
-/* ── File uploader ── */
-[data-testid="stFileUploader"] {
-    background: var(--surface2) !important;
-    border: 1px dashed var(--border2) !important;
-    border-radius: var(--radius) !important;
-    padding: 1.5rem !important;
-    transition: border-color 0.2s !important;
-}
-[data-testid="stFileUploader"]:hover { border-color: var(--violet) !important; }
-
-/* ── Progress ── */
-.stProgress > div > div > div {
-    background: linear-gradient(90deg, var(--violet), var(--cyan)) !important;
-    border-radius: 99px !important;
-    box-shadow: 0 0 12px rgba(0,229,255,0.25) !important;
-}
-.stProgress > div > div { background: var(--border) !important; border-radius: 99px !important; height: 3px !important; }
-
-/* ── Metrics ── */
-[data-testid="stMetric"] {
-    background: var(--surface2) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius) !important;
-    padding: 1.2rem 1.4rem !important;
+    border: 1px solid var(--b3) !important;
+    color: var(--t2) !important;
+    border-radius: var(--r2) !important;
+    font-family: 'Geist Mono', monospace !important;
+    font-weight: 500 !important;
+    font-size: 0.78rem !important;
+    padding: 0.6rem 1.4rem !important;
+    letter-spacing: 0.04em !important;
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1) !important;
     position: relative !important; overflow: hidden !important;
 }
-[data-testid="stMetric"]::before {
+.stButton > button:hover {
+    border-color: var(--electric) !important;
+    color: var(--electric) !important;
+    background: rgba(0,212,255,0.05) !important;
+    box-shadow: 0 0 20px rgba(0,212,255,0.12), inset 0 0 20px rgba(0,212,255,0.03) !important;
+    transform: translateY(-1px) !important;
+}
+.stButton > button:active { transform: translateY(0) !important; }
+
+/* ─── Inputs ─── */
+.stTextArea textarea,
+.stTextInput input {
+    background: var(--surface2) !important;
+    border: 1px solid var(--b2) !important;
+    border-radius: var(--r2) !important;
+    color: var(--t1) !important;
+    font-family: 'Geist Mono', monospace !important;
+    font-size: 0.84rem !important;
+    line-height: 1.7 !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+.stTextArea textarea:focus,
+.stTextInput input:focus {
+    border-color: rgba(0,212,255,0.5) !important;
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.08), 0 0 20px rgba(0,212,255,0.06) !important;
+    outline: none !important;
+}
+.stTextArea label, .stTextInput label { color: var(--t3) !important; font-family: 'Geist Mono', monospace !important; font-size: 0.72rem !important; }
+
+/* ─── Select / Dropdown ─── */
+.stSelectbox > div > div,
+.stMultiSelect > div > div {
+    background: var(--surface2) !important;
+    border: 1px solid var(--b2) !important;
+    border-radius: var(--r2) !important;
+    color: var(--t1) !important;
+    font-family: 'Geist Mono', monospace !important;
+    font-size: 0.82rem !important;
+}
+
+/* ─── File uploader ─── */
+[data-testid="stFileUploader"] {
+    background: var(--surface2) !important;
+    border: 1px dashed var(--b3) !important;
+    border-radius: var(--r3) !important;
+    transition: all 0.2s !important;
+}
+[data-testid="stFileUploader"]:hover { border-color: rgba(124,58,237,0.5) !important; background: var(--neon-ghost) !important; }
+
+/* ─── Progress ─── */
+.stProgress > div > div { background: var(--b2) !important; border-radius: 99px !important; height: 2px !important; }
+.stProgress > div > div > div {
+    background: linear-gradient(90deg, var(--neon), var(--electric)) !important;
+    border-radius: 99px !important;
+    box-shadow: 0 0 8px rgba(0,212,255,0.4) !important;
+}
+
+/* ─── Metrics ─── */
+[data-testid="stMetric"] {
+    background: var(--surface) !important;
+    border: 1px solid var(--b2) !important;
+    border-radius: var(--r3) !important;
+    padding: 1.1rem 1.3rem !important;
+    position: relative !important; overflow: hidden !important;
+}
+[data-testid="stMetric"]::after {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.3), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.4), transparent);
 }
 [data-testid="stMetricValue"] {
-    font-family: 'Syne', sans-serif !important; font-size: 1.9rem !important;
-    font-weight: 800 !important; color: var(--cyan) !important;
+    font-family: 'Geist', sans-serif !important;
+    font-size: 1.7rem !important; font-weight: 800 !important;
+    color: var(--electric) !important;
 }
 [data-testid="stMetricLabel"] {
-    font-family: 'DM Mono', monospace !important; font-size: 0.65rem !important;
-    color: var(--text3) !important; letter-spacing: 0.12em !important; text-transform: uppercase !important;
+    font-family: 'Geist Mono', monospace !important;
+    font-size: 0.62rem !important; color: var(--t3) !important;
+    letter-spacing: 0.14em !important; text-transform: uppercase !important;
 }
+[data-testid="stMetricDelta"] { font-family: 'Geist Mono', monospace !important; font-size: 0.72rem !important; }
 
-/* ── Alerts ── */
-.stSuccess { background: rgba(16,185,129,0.06) !important; border-color: rgba(16,185,129,0.3) !important; border-radius: 12px !important; }
-.stError   { background: rgba(244,63,94,0.06) !important;  border-color: rgba(244,63,94,0.3) !important;    border-radius: 12px !important; }
-.stWarning { background: rgba(245,158,11,0.06) !important; border-color: rgba(245,158,11,0.3) !important;   border-radius: 12px !important; }
-.stInfo    { background: rgba(0,229,255,0.04) !important;  border-color: rgba(0,229,255,0.2) !important;    border-radius: 12px !important; }
+/* ─── Alerts ─── */
+.stSuccess { background: rgba(0,200,150,0.05) !important; border: 1px solid rgba(0,200,150,0.25) !important; border-radius: var(--r2) !important; }
+.stError   { background: rgba(251,44,54,0.05) !important;  border: 1px solid rgba(251,44,54,0.25) !important;  border-radius: var(--r2) !important; }
+.stWarning { background: rgba(251,191,36,0.05) !important; border: 1px solid rgba(251,191,36,0.25) !important; border-radius: var(--r2) !important; }
+.stInfo    { background: rgba(0,212,255,0.04) !important;  border: 1px solid rgba(0,212,255,0.2) !important;   border-radius: var(--r2) !important; }
 
-/* ── Slider ── */
+/* ─── Slider ─── */
 .stSlider [data-baseweb="slider"] { padding: 0 !important; }
-hr { border-color: var(--border) !important; margin: 1.5rem 0 !important; }
+.stSlider .stSlider { color: var(--electric) !important; }
 
-/* ── Toggle ── */
-.stToggle > label { color: var(--text2) !important; font-family: 'DM Mono', monospace !important; font-size: 0.8rem !important; }
+/* ─── Toggle ─── */
+.stToggle > label { color: var(--t3) !important; font-family: 'Geist Mono', monospace !important; font-size: 0.75rem !important; }
 
-/* ── Expander ── */
+/* ─── Expander ─── */
 .streamlit-expanderHeader {
-    background: var(--surface2) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    font-family: 'DM Mono', monospace !important;
-    font-size: 0.8rem !important;
-    color: var(--text2) !important;
+    background: var(--surface2) !important; border: 1px solid var(--b2) !important;
+    border-radius: var(--r2) !important; font-family: 'Geist Mono', monospace !important;
+    font-size: 0.75rem !important; color: var(--t3) !important; transition: all 0.2s !important;
 }
+.streamlit-expanderHeader:hover { border-color: var(--b3) !important; color: var(--t2) !important; }
 
-/* ════════════════════════════════════════════
-   CUSTOM COMPONENTS
-════════════════════════════════════════════ */
-
-/* ── Hero ── */
-.hero-wrap { text-align: center; padding: 5rem 0 2.5rem; position: relative; }
-.hero-eyebrow {
-    font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.28em;
-    text-transform: uppercase; color: var(--cyan); margin-bottom: 1.5rem; opacity: 0.7;
+/* ─── Tabs ─── */
+.stTabs [data-baseweb="tab-list"] { gap: 0.25rem; background: var(--surface2) !important; border-radius: var(--r2) !important; padding: 4px !important; border: 1px solid var(--b2) !important; }
+.stTabs [data-baseweb="tab"] {
+    border-radius: var(--r1) !important; font-family: 'Geist Mono', monospace !important;
+    font-size: 0.73rem !important; color: var(--t3) !important; transition: all 0.2s !important;
+    padding: 0.4rem 1rem !important;
 }
-.hero-title {
-    font-family: 'Syne', sans-serif; font-size: clamp(4.5rem, 12vw, 9rem);
-    font-weight: 800; line-height: 0.88; letter-spacing: -0.03em;
-    background: linear-gradient(130deg, #ffffff 0%, var(--cyan) 40%, var(--violet) 80%, #f43f5e 100%);
+.stTabs [aria-selected="true"] { background: var(--surface4) !important; color: var(--electric) !important; }
+.stTabs [data-baseweb="tab-panel"] { padding-top: 1.5rem !important; }
+
+hr { border-color: var(--b2) !important; margin: 1.2rem 0 !important; }
+
+/* ════════════════════════════════════════════════════════
+   CUSTOM COMPONENTS v2
+════════════════════════════════════════════════════════ */
+
+/* ─── Hero section ─── */
+.hero {
+    text-align: center; padding: 5.5rem 1rem 3rem; position: relative;
+}
+.hero-kicker {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: 'Geist Mono', monospace; font-size: 0.65rem;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--electric-dim); margin-bottom: 2rem;
+    background: var(--electric-ghost); border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 99px; padding: 0.3rem 1rem;
+}
+.hero-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--electric); animation: pulse-dot 2s ease infinite; }
+.hero-wordmark {
+    font-family: 'Geist', sans-serif; font-weight: 900;
+    font-size: clamp(5rem, 14vw, 10rem); line-height: 0.85;
+    letter-spacing: -0.05em;
+    background: linear-gradient(145deg, #ffffff 0%, var(--electric) 35%, var(--neon) 70%, var(--plasma) 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    filter: drop-shadow(0 0 60px rgba(0,229,255,0.15));
-    animation: heroReveal 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+    filter: drop-shadow(0 0 80px rgba(0,212,255,0.2));
+    animation: hero-in 0.8s cubic-bezier(0.16,1,0.3,1) both;
 }
-.hero-title-accent {
-    font-family: 'Fraunces', serif; font-style: italic; font-weight: 300;
-    font-size: clamp(1.2rem, 3vw, 2rem);
-    background: linear-gradient(90deg, var(--text2), var(--cyan-dim));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    display: block; margin-top: 0.8rem;
-    animation: heroReveal 1s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+.hero-sub-title {
+    font-family: 'Instrument Serif', serif; font-style: italic;
+    font-size: clamp(1rem, 2.5vw, 1.5rem); color: var(--t2);
+    margin-top: 0.8rem; letter-spacing: 0.02em;
+    animation: hero-in 0.8s 0.1s cubic-bezier(0.16,1,0.3,1) both;
 }
-.hero-sub {
-    font-family: 'Cabinet Grotesk', sans-serif; font-size: 1.1rem; color: var(--text2);
-    margin-top: 1.5rem; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.65;
-    animation: heroReveal 1s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+.hero-desc {
+    font-size: 1rem; color: var(--t2); max-width: 480px;
+    margin: 1.2rem auto 0; line-height: 1.7;
+    animation: hero-in 0.8s 0.2s cubic-bezier(0.16,1,0.3,1) both;
 }
-.hero-stats {
-    display: flex; justify-content: center; gap: 3rem; margin-top: 2.5rem;
-    animation: heroReveal 1s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+.hero-badges {
+    display: flex; justify-content: center; gap: 0.6rem;
+    flex-wrap: wrap; margin-top: 2rem;
+    animation: hero-in 0.8s 0.3s cubic-bezier(0.16,1,0.3,1) both;
 }
-.hero-stat-num {
-    font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--text);
+.hero-badge {
+    font-family: 'Geist Mono', monospace; font-size: 0.65rem;
+    letter-spacing: 0.08em; color: var(--t3);
+    background: var(--surface2); border: 1px solid var(--b2);
+    border-radius: 99px; padding: 0.25rem 0.8rem;
 }
-.hero-stat-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.2rem; }
 
-/* ── Panels ── */
-.panel {
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
-    padding: 2rem; margin-bottom: 1.5rem; position: relative; overflow: hidden;
-    animation: panelIn 0.5s ease both;
+/* ─── Glass panels ─── */
+.glass {
+    background: rgba(8,15,31,0.8); backdrop-filter: blur(20px);
+    border: 1px solid var(--b2); border-radius: var(--r4);
+    padding: 1.8rem; position: relative; overflow: hidden;
+    animation: panel-in 0.4s ease both;
 }
-.panel-glow-cyan   { border-color: rgba(0,229,255,0.15);  box-shadow: var(--glow-cyan); }
-.panel-glow-violet { border-color: rgba(139,92,246,0.15); box-shadow: var(--glow-violet); }
-.panel-glow-rose   { border-color: rgba(244,63,94,0.15);  box-shadow: var(--glow-rose); }
-.panel-glow-gold   { border-color: rgba(251,191,36,0.2);  box-shadow: 0 0 60px rgba(251,191,36,0.06); }
-.panel::before {
+.glass::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent 0%, rgba(0,229,255,0.4) 50%, transparent 100%);
-    opacity: 0.4;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.3), transparent);
 }
+.glass-electric { border-color: rgba(0,212,255,0.18);  box-shadow: var(--glow-e); }
+.glass-neon     { border-color: rgba(124,58,237,0.18); box-shadow: var(--glow-n); }
+.glass-jade     { border-color: rgba(0,200,150,0.18);  box-shadow: var(--glow-c); }
+.glass-fire     { border-color: rgba(251,44,54,0.18);  box-shadow: var(--glow-r); }
+.glass-gold     { border-color: rgba(251,191,36,0.2);  box-shadow: 0 0 40px rgba(251,191,36,0.06); }
 
-/* ── Section label ── */
-.sec-label {
-    font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.18em;
-    text-transform: uppercase; color: var(--text3); margin-bottom: 1rem;
-    display: flex; align-items: center; gap: 0.5rem;
+/* ─── Section labels ─── */
+.sec {
+    font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--t4);
+    display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.9rem;
 }
-.sec-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.sec::after { content: ''; flex: 1; height: 1px; background: var(--b2); }
+.sec-electric { color: rgba(0,212,255,0.45); }
+.sec-neon     { color: rgba(124,58,237,0.45); }
+.sec-jade     { color: rgba(0,200,150,0.45); }
 
-/* ── Interviewer avatar ── */
-.interviewer-wrap {
-    display: flex; align-items: flex-start; gap: 1.5rem; padding: 1.5rem 1.8rem;
-    background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-lg);
-    margin-bottom: 1.5rem; position: relative; overflow: hidden;
-    animation: slideDown 0.4s ease both;
+/* ─── Persona cards ─── */
+.persona-card {
+    background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r3);
+    padding: 1.2rem; text-align: center; cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+    position: relative; overflow: hidden;
 }
-.interviewer-wrap::before {
-    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-    background: linear-gradient(180deg, var(--cyan), var(--violet), rgba(244,63,94,0.5));
-}
-.avatar-ring {
-    width: 60px; height: 60px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--surface3), var(--surface2));
-    border: 2px solid rgba(0,229,255,0.4); display: flex; align-items: center; justify-content: center;
-    font-size: 1.6rem; box-shadow: 0 0 20px rgba(0,229,255,0.15), inset 0 0 20px rgba(0,229,255,0.05);
-    flex-shrink: 0; position: relative;
-}
-.avatar-ring.speaking::after {
-    content: ''; position: absolute; inset: -7px; border-radius: 50%;
-    border: 2px solid var(--cyan); animation: speakPulse 1.5s ease infinite; opacity: 0.4;
-}
-.avatar-ring.thinking { border-color: rgba(245,158,11,0.5) !important; animation: thinkPulse 2s ease infinite; }
-.interviewer-meta { flex-shrink: 0; }
-.interviewer-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; color: var(--text); }
-.interviewer-status {
-    font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--cyan);
-    letter-spacing: 0.08em; margin-top: 0.25rem; display: flex; align-items: center; gap: 0.4rem;
-}
-.status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--emerald); animation: blink 2s ease infinite; }
-.status-dot.thinking { background: var(--amber); animation: blink 0.8s ease infinite; }
-.interviewer-speech {
-    font-family: 'Fraunces', serif; font-style: italic; font-size: 1rem;
-    color: var(--text2); line-height: 1.6; flex: 1; letter-spacing: 0.01em;
-}
-.speech-quote { color: rgba(0,229,255,0.3); font-size: 1.4rem; line-height: 0; vertical-align: -0.3em; }
+.persona-card:hover { transform: translateY(-3px); border-color: var(--b4); }
+.persona-card.active { border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.04); }
+.persona-card.active::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--electric), var(--neon)); }
+.persona-emoji { font-size: 2rem; margin-bottom: 0.5rem; }
+.persona-name { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--t1); }
+.persona-role { font-family: 'Geist Mono', monospace; font-size: 0.6rem; color: var(--t3); letter-spacing: 0.06em; margin-top: 0.2rem; }
+.persona-desc { font-size: 0.75rem; color: var(--t3); margin-top: 0.5rem; line-height: 1.5; }
 
-/* ── Question card ── */
-.q-card {
-    background: linear-gradient(135deg, rgba(0,229,255,0.03) 0%, rgba(139,92,246,0.03) 100%);
-    border: 1px solid rgba(0,229,255,0.14); border-radius: var(--radius-lg);
-    padding: 2.5rem 2.8rem; margin: 1.5rem 0; position: relative;
-    animation: panelIn 0.4s ease both;
-}
-.q-card::after {
-    content: ''; position: absolute; top: -1px; left: 8%; right: 8%; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--cyan), var(--violet), transparent);
-    border-radius: 99px; opacity: 0.7;
-}
-.q-num { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--cyan); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 1rem; opacity: 0.7; }
-.q-text { font-family: 'Syne', sans-serif; font-size: clamp(1.1rem, 2.2vw, 1.45rem); font-weight: 600; line-height: 1.42; color: var(--text); margin: 0; }
-.q-meta { display: flex; align-items: center; gap: 0.6rem; margin-top: 1.2rem; flex-wrap: wrap; }
-.q-competency {
-    font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em;
-    color: var(--text3); background: var(--surface3); border: 1px solid var(--border);
-    border-radius: 6px; padding: 0.2rem 0.6rem;
-}
-.q-type-badge {
-    display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.7rem;
-    border-radius: 99px; font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.06em;
-}
-.badge-technical   { background: rgba(139,92,246,0.1); color: var(--violet); border: 1px solid rgba(139,92,246,0.25); }
-.badge-behavioral  { background: rgba(0,229,255,0.07); color: var(--cyan);   border: 1px solid rgba(0,229,255,0.2); }
-.badge-situational { background: rgba(245,158,11,0.08); color: var(--amber); border: 1px solid rgba(245,158,11,0.25); }
-.badge-rapport     { background: rgba(16,185,129,0.08); color: var(--emerald); border: 1px solid rgba(16,185,129,0.25); }
-.badge-ambition    { background: rgba(251,191,36,0.08); color: var(--gold); border: 1px solid rgba(251,191,36,0.25); }
-
-/* ── Waveform ── */
-.waveform-wrap { display: flex; align-items: center; justify-content: center; gap: 3px; height: 44px; margin: 0.8rem 0; }
-.wave-bar { width: 3px; border-radius: 99px; background: var(--cyan); animation: waveDance var(--speed) ease-in-out infinite alternate; }
-
-/* ── Live coaching bar ── */
-.coaching-bar {
-    background: rgba(0,229,255,0.03); border: 1px solid rgba(0,229,255,0.1);
-    border-radius: 10px; padding: 0.75rem 1.1rem; margin-top: 0.6rem;
-    font-family: 'DM Mono', monospace; font-size: 0.72rem; color: rgba(0,229,255,0.55);
-    display: flex; align-items: center; gap: 0.6rem; line-height: 1.5;
-    transition: all 0.3s ease;
-}
-.coaching-bar.warn { color: rgba(245,158,11,0.7); border-color: rgba(245,158,11,0.15); background: rgba(245,158,11,0.03); }
-.coaching-bar.good { color: rgba(16,185,129,0.7); border-color: rgba(16,185,129,0.15); background: rgba(16,185,129,0.03); }
-.coaching-icon { font-size: 0.9rem; }
-
-/* ── Word count indicator ── */
-.word-meter { display: flex; align-items: center; gap: 0.8rem; margin-top: 0.5rem; }
-.word-meter-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text3); letter-spacing: 0.08em; }
-.word-meter-bar { flex: 1; height: 2px; background: var(--border); border-radius: 99px; overflow: hidden; }
-.word-meter-fill { height: 100%; border-radius: 99px; transition: width 0.3s ease, background 0.3s ease; }
-
-/* ── Feedback card ── */
-.feedback-card {
-    background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-lg);
-    padding: 2rem; margin-top: 1.5rem; position: relative; overflow: hidden;
-    animation: slideRight 0.4s ease both;
-}
-.feedback-card::before {
-    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-    background: linear-gradient(180deg, var(--violet), var(--cyan));
-}
-.feedback-section { margin-bottom: 1.1rem; padding-bottom: 1.1rem; border-bottom: 1px solid var(--border); }
-.feedback-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-.feedback-label { font-family: 'DM Mono', monospace; font-size: 0.63rem; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.45rem; }
-.label-strength   { color: var(--emerald); }
-.label-weakness   { color: var(--rose); }
-.label-suggestion { color: var(--amber); }
-.label-star       { color: var(--violet); }
-.feedback-text    { font-family: 'Cabinet Grotesk', sans-serif; font-size: 0.93rem; color: var(--text2); line-height: 1.6; }
-
-/* ── Score display ── */
-.score-display { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-.score-ring-wrap { position: relative; width: 88px; height: 88px; flex-shrink: 0; }
-.score-ring-num {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-family: 'Syne', sans-serif; font-size: 1.7rem; font-weight: 800;
-}
-.score-high { color: var(--emerald); }
-.score-mid  { color: var(--amber); }
-.score-low  { color: var(--rose); }
-.verdict-text { font-family: 'Syne', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--text); }
-.verdict-sub  { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--text3); margin-top: 0.2rem; }
-.tone-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
-.tone-chip {
-    padding: 0.2rem 0.65rem; border-radius: 99px;
-    font-family: 'DM Mono', monospace; font-size: 0.65rem;
-    background: rgba(139,92,246,0.08); color: var(--violet-dim); border: 1px solid rgba(139,92,246,0.2);
-}
-.tone-chip.positive { background: rgba(16,185,129,0.08); color: rgba(16,185,129,0.7); border-color: rgba(16,185,129,0.2); }
-.tone-chip.negative { background: rgba(244,63,94,0.07); color: rgba(244,63,94,0.65); border-color: rgba(244,63,94,0.2); }
-
-/* ── STAR analysis ── */
-.star-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-top: 0.8rem; }
-.star-cell {
-    background: var(--surface3); border: 1px solid var(--border); border-radius: 8px;
-    padding: 0.6rem 0.7rem; text-align: center;
-}
-.star-cell-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.25rem; }
-.star-cell-value { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; }
-.star-found { color: var(--emerald); }
-.star-missing { color: var(--rose); opacity: 0.5; }
-
-/* ── Recording strip ── */
-.rec-strip {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0.75rem 1.1rem; background: rgba(244,63,94,0.05);
-    border: 1px solid rgba(244,63,94,0.18); border-radius: 10px; margin-bottom: 0.8rem;
-}
-.rec-label { display: flex; align-items: center; gap: 0.5rem; font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--rose); }
-.rec-dot   { width: 7px; height: 7px; border-radius: 50%; background: var(--rose); animation: blink 1s ease infinite; }
-
-/* ── Mode selector cards ── */
-.mode-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 0.5rem; }
+/* ─── Mode selector ─── */
+.mode-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.6rem; }
 .mode-card {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
-    padding: 1.1rem; cursor: pointer; transition: all 0.2s ease; position: relative;
+    background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r2);
+    padding: 0.9rem 1rem; cursor: pointer; transition: all 0.2s ease;
 }
-.mode-card:hover { border-color: var(--border3); transform: translateY(-2px); }
-.mode-card.active-casual  { border-color: rgba(16,185,129,0.5);  background: rgba(16,185,129,0.05); }
-.mode-card.active-standard{ border-color: rgba(0,229,255,0.4);   background: rgba(0,229,255,0.04); }
-.mode-card.active-intense { border-color: rgba(244,63,94,0.4);   background: rgba(244,63,94,0.05); }
-.mode-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; color: var(--text); margin-bottom: 0.3rem; }
-.mode-desc  { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text3); line-height: 1.5; }
+.mode-card:hover { border-color: var(--b4); }
+.mode-card.m-casual   { border-color: rgba(0,200,150,0.35); background: rgba(0,200,150,0.04); }
+.mode-card.m-standard { border-color: rgba(0,212,255,0.35); background: rgba(0,212,255,0.04); }
+.mode-card.m-intense  { border-color: rgba(251,44,54,0.35);  background: rgba(251,44,54,0.04); }
+.mode-title { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.88rem; color: var(--t1); }
+.mode-desc  { font-family: 'Geist Mono', monospace; font-size: 0.62rem; color: var(--t3); margin-top: 0.3rem; line-height: 1.5; }
+.mode-pill  {
+    display: inline-block; font-family: 'Geist Mono', monospace;
+    font-size: 0.58rem; letter-spacing: 0.08em; border-radius: 99px;
+    padding: 0.15rem 0.5rem; margin-top: 0.4rem;
+}
+.pill-jade   { background: rgba(0,200,150,0.12); color: rgba(0,200,150,0.8); border: 1px solid rgba(0,200,150,0.25); }
+.pill-elec   { background: rgba(0,212,255,0.1);  color: rgba(0,212,255,0.75); border: 1px solid rgba(0,212,255,0.2); }
+.pill-fire   { background: rgba(251,44,54,0.1);  color: rgba(251,100,100,0.8); border: 1px solid rgba(251,44,54,0.25); }
 
-/* ── Progress ring SVG ── */
-.progress-ring-svg { transform: rotate(-90deg); }
+/* ─── Resume upload zone ─── */
+.upload-zone {
+    border: 1px dashed rgba(124,58,237,0.3); border-radius: var(--r3);
+    padding: 2rem 1.5rem; text-align: center;
+    background: rgba(124,58,237,0.03); transition: all 0.2s;
+}
+.upload-zone:hover { border-color: rgba(124,58,237,0.6); background: rgba(124,58,237,0.06); }
+.upload-icon { font-size: 2rem; margin-bottom: 0.6rem; }
+.upload-title { font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.9rem; color: var(--t1); }
+.upload-hint  { font-family: 'Geist Mono', monospace; font-size: 0.65rem; color: var(--t3); margin-top: 0.3rem; }
 
-/* ── Results ── */
+/* ─── Resume profile card ─── */
+.resume-profile {
+    background: var(--surface3); border: 1px solid var(--b3); border-radius: var(--r3);
+    padding: 1.4rem; position: relative; overflow: hidden;
+}
+.resume-profile::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--neon), var(--electric)); }
+.rp-name  { font-family: 'Geist', sans-serif; font-weight: 800; font-size: 1.3rem; color: var(--t1); }
+.rp-role  { font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: var(--electric-dim); margin-top: 0.2rem; letter-spacing: 0.06em; }
+.rp-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.8rem; }
+.rp-chip  {
+    font-family: 'Geist Mono', monospace; font-size: 0.62rem; letter-spacing: 0.04em;
+    background: var(--surface4); border: 1px solid var(--b3); border-radius: var(--r1);
+    padding: 0.2rem 0.55rem; color: var(--t2);
+}
+.rp-chip.highlight { background: rgba(0,212,255,0.08); border-color: rgba(0,212,255,0.2); color: var(--electric-dim); }
+.rp-stats { display: flex; gap: 1.5rem; margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid var(--b2); }
+.rp-stat-num { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--t1); }
+.rp-stat-lbl { font-family: 'Geist Mono', monospace; font-size: 0.58rem; color: var(--t4); letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* ─── Interviewer avatar bar ─── */
+.avatar-bar {
+    display: flex; align-items: flex-start; gap: 1.2rem;
+    padding: 1.3rem 1.5rem;
+    background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r3);
+    position: relative; overflow: hidden; margin-bottom: 1.2rem;
+    animation: slide-down 0.4s ease both;
+}
+.avatar-bar::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(180deg, var(--electric), var(--neon), rgba(240,171,252,0.3));
+}
+.avatar-icon {
+    width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+    background: var(--surface3); border: 1.5px solid rgba(0,212,255,0.3);
+    display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+    box-shadow: 0 0 16px rgba(0,212,255,0.12), inset 0 0 16px rgba(0,212,255,0.04);
+}
+.avatar-icon.speaking { animation: speak-pulse 1.8s ease-in-out infinite; }
+.avatar-meta { flex-shrink: 0; }
+.avatar-name   { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.9rem; color: var(--t1); }
+.avatar-status { font-family: 'Geist Mono', monospace; font-size: 0.62rem; color: var(--jade); letter-spacing: 0.08em; display: flex; align-items: center; gap: 0.35rem; margin-top: 0.2rem; }
+.status-led    { width: 5px; height: 5px; border-radius: 50%; background: var(--jade); animation: blink-led 2s ease infinite; }
+.status-led.busy { background: var(--gold); }
+.avatar-speech {
+    font-family: 'Instrument Serif', serif; font-style: italic;
+    font-size: 0.98rem; color: var(--t2); line-height: 1.65; flex: 1;
+}
+.speech-open  { color: rgba(0,212,255,0.25); font-size: 1.2rem; vertical-align: -0.2em; }
+.speech-close { color: rgba(0,212,255,0.25); font-size: 1.2rem; vertical-align: -0.2em; }
+
+/* ─── Question card ─── */
+.q-card {
+    background: linear-gradient(135deg, rgba(0,212,255,0.025) 0%, rgba(124,58,237,0.025) 100%);
+    border: 1px solid var(--b3); border-radius: var(--r4);
+    padding: 2.2rem 2.5rem; margin: 1rem 0; position: relative; overflow: hidden;
+    animation: panel-in 0.35s ease both;
+}
+.q-card::before {
+    content: ''; position: absolute; top: -1px; left: 12%; right: 12%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--electric), var(--neon), var(--plasma), transparent);
+    opacity: 0.6;
+}
+.q-counter { font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--t4); margin-bottom: 0.9rem; }
+.q-text     { font-family: 'Geist', sans-serif; font-size: clamp(1.05rem, 2vw, 1.35rem); font-weight: 600; line-height: 1.45; color: var(--t1); }
+.q-meta     { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+.q-badge    {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.06em;
+    border-radius: 99px; padding: 0.22rem 0.65rem;
+}
+.qb-tech     { background: rgba(124,58,237,0.1); color: rgba(167,139,250,0.8); border: 1px solid rgba(124,58,237,0.25); }
+.qb-behav    { background: rgba(0,212,255,0.08); color: rgba(0,212,255,0.7); border: 1px solid rgba(0,212,255,0.2); }
+.qb-sit      { background: rgba(251,191,36,0.08); color: rgba(251,191,36,0.7); border: 1px solid rgba(251,191,36,0.25); }
+.qb-rapport  { background: rgba(0,200,150,0.08); color: rgba(0,200,150,0.7); border: 1px solid rgba(0,200,150,0.25); }
+.qb-ambition { background: rgba(251,44,54,0.08); color: rgba(251,100,100,0.7); border: 1px solid rgba(251,44,54,0.25); }
+.q-comp-tag  {
+    font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em;
+    background: var(--surface3); border: 1px solid var(--b3); border-radius: var(--r1);
+    padding: 0.2rem 0.55rem; color: var(--t3);
+}
+.q-diff {
+    font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em;
+    padding: 0.2rem 0.55rem; border-radius: 99px; border: 1px solid;
+}
+.diff-e { color: var(--jade);   border-color: rgba(0,200,150,0.3); background: rgba(0,200,150,0.06); }
+.diff-m { color: var(--gold);   border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.06); }
+.diff-h { color: var(--crimson); border-color: rgba(251,44,54,0.3); background: rgba(251,44,54,0.06); }
+
+/* ─── Live coaching ─── */
+.coach-bar {
+    display: flex; align-items: flex-start; gap: 0.6rem;
+    padding: 0.7rem 1rem; border-radius: var(--r2); border: 1px solid;
+    font-family: 'Geist Mono', monospace; font-size: 0.72rem; line-height: 1.55;
+    margin-top: 0.5rem; transition: all 0.3s ease;
+}
+.coach-info    { color: rgba(0,212,255,0.55);  border-color: rgba(0,212,255,0.12); background: rgba(0,212,255,0.03); }
+.coach-warn    { color: rgba(251,191,36,0.65); border-color: rgba(251,191,36,0.15); background: rgba(251,191,36,0.03); }
+.coach-success { color: rgba(0,200,150,0.65);  border-color: rgba(0,200,150,0.15); background: rgba(0,200,150,0.03); }
+.coach-icon    { font-size: 0.9rem; flex-shrink: 0; margin-top: 0.05rem; }
+
+/* ─── STAR grid ─── */
+.star-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.4rem; }
+.star-cell {
+    background: var(--surface3); border: 1px solid var(--b2);
+    border-radius: var(--r1); padding: 0.5rem; text-align: center;
+}
+.star-label { font-family: 'Geist Mono', monospace; font-size: 0.58rem; color: var(--t4); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.2rem; }
+.star-val   { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 1rem; }
+.star-y { color: var(--jade); }
+.star-n { color: var(--t4); }
+.star-cell.active { border-color: rgba(0,200,150,0.35); background: rgba(0,200,150,0.04); }
+
+/* ─── Word meter ─── */
+.word-meter { display: flex; align-items: center; gap: 0.7rem; margin-top: 0.4rem; }
+.wm-count  { font-family: 'Geist Mono', monospace; font-size: 0.68rem; color: var(--t3); min-width: 52px; }
+.wm-track  { flex: 1; height: 2px; background: var(--b2); border-radius: 99px; overflow: hidden; }
+.wm-fill   { height: 100%; border-radius: 99px; transition: width 0.3s ease, background 0.3s ease; }
+.wm-status { font-family: 'Geist Mono', monospace; font-size: 0.62rem; min-width: 52px; text-align: right; }
+
+/* ─── Waveform ─── */
+.wave { display: flex; align-items: center; justify-content: center; gap: 2.5px; height: 36px; }
+.wave-b {
+    width: 2.5px; border-radius: 99px; background: var(--electric);
+    animation: wave-dance var(--spd) ease-in-out infinite alternate;
+}
+
+/* ─── Feedback card ─── */
+.fb-card {
+    background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r3);
+    padding: 1.8rem; margin-top: 1.2rem; position: relative; overflow: hidden;
+    animation: slide-right 0.35s ease both;
+}
+.fb-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--neon), var(--electric)); }
+.fb-score-row { display: flex; align-items: center; gap: 1.3rem; margin-bottom: 1.3rem; flex-wrap: wrap; }
+.fb-ring-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+.fb-ring-num  { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Geist', sans-serif; font-size: 1.5rem; font-weight: 800; }
+.fb-verdict { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 1.15rem; color: var(--t1); }
+.fb-sub     { font-family: 'Geist Mono', monospace; font-size: 0.68rem; color: var(--t3); margin-top: 0.15rem; }
+.tone-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
+.tone-chip  {
+    font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em;
+    padding: 0.18rem 0.55rem; border-radius: 99px; border: 1px solid;
+}
+.tc-pos { background: rgba(0,200,150,0.08); color: rgba(0,200,150,0.7); border-color: rgba(0,200,150,0.2); }
+.tc-neg { background: rgba(251,44,54,0.07); color: rgba(251,100,100,0.65); border-color: rgba(251,44,54,0.2); }
+.tc-neu { background: rgba(124,58,237,0.08); color: rgba(167,139,250,0.65); border-color: rgba(124,58,237,0.2); }
+.fb-sec { margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--b1); }
+.fb-sec:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.fb-lbl { font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.4rem; }
+.fb-lbl-str { color: var(--jade); }
+.fb-lbl-gap { color: var(--crimson); }
+.fb-lbl-sug { color: var(--gold); }
+.fb-lbl-ide { color: rgba(124,58,237,0.7); }
+.fb-text { font-family: 'Geist', sans-serif; font-size: 0.88rem; color: var(--t2); line-height: 1.65; }
+
+/* ─── Progress ring ─── */
+.ring-svg { transform: rotate(-90deg); }
+
+/* ─── Results hero ─── */
 .result-hero {
     text-align: center; padding: 4rem 2rem;
-    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
-    border: 1px solid var(--border); border-radius: var(--radius-xl);
-    position: relative; overflow: hidden; margin-bottom: 2rem;
+    background: linear-gradient(145deg, var(--surface) 0%, var(--surface2) 100%);
+    border: 1px solid var(--b2); border-radius: var(--r5); margin-bottom: 2rem;
+    position: relative; overflow: hidden;
 }
-.result-hero::before {
-    content: ''; position: absolute; inset: 0;
-    background: radial-gradient(ellipse 60% 60% at 50% 0%, rgba(0,229,255,0.05), transparent);
-}
-.result-grade { font-family: 'Syne', sans-serif; font-size: clamp(5rem, 14vw, 10rem); font-weight: 800; line-height: 0.9; letter-spacing: -0.03em; }
-.result-grade-A { background: linear-gradient(135deg, #10b981, #00e5ff, #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 40px rgba(16,185,129,0.3)); }
-.result-grade-B { background: linear-gradient(135deg, #00e5ff, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 40px rgba(0,229,255,0.25)); }
-.result-grade-C { background: linear-gradient(135deg, #f59e0b, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.result-grade-D { background: linear-gradient(135deg, #f43f5e, #dc2626); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-.result-label   { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text3); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 1.2rem; }
-.result-tagline { font-family: 'Fraunces', serif; font-style: italic; font-size: 1.3rem; color: var(--text2); margin-top: 0.5rem; }
+.result-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0,212,255,0.04), transparent); }
+.result-grade { font-family: 'Geist', sans-serif; font-size: clamp(5rem, 14vw, 11rem); font-weight: 900; line-height: 0.88; letter-spacing: -0.04em; }
+.grade-A { background: linear-gradient(135deg, #10b981, #00d4ff, #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 40px rgba(0,200,150,0.35)); }
+.grade-B { background: linear-gradient(135deg, #00d4ff, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 40px rgba(0,212,255,0.25)); }
+.grade-C { background: linear-gradient(135deg, #fbbf24, #fb923c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.grade-D { background: linear-gradient(135deg, #fb2c36, #dc2626); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.result-score-row { font-family: 'Geist Mono', monospace; font-size: 0.7rem; color: var(--t3); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 1rem; }
+.result-tagline   { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 1.2rem; color: var(--t2); margin-top: 0.4rem; }
 
-/* ── Q timeline ── */
-.q-timeline-item {
-    display: flex; gap: 1.1rem; align-items: flex-start;
-    padding: 1.1rem 0; border-bottom: 1px solid var(--border);
-}
-.q-timeline-item:last-child { border-bottom: none; }
-.q-timeline-num { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text3); min-width: 26px; padding-top: 0.15rem; }
-.q-timeline-content { flex: 1; }
-.q-timeline-q { font-family: 'Cabinet Grotesk', sans-serif; font-weight: 600; font-size: 0.92rem; color: var(--text); margin-bottom: 0.4rem; }
+/* ─── Q breakdown timeline ─── */
+.qbt-item { display: flex; gap: 1rem; align-items: flex-start; padding: 1rem 0; border-bottom: 1px solid var(--b1); }
+.qbt-item:last-child { border-bottom: none; }
+.qbt-num  { font-family: 'Geist Mono', monospace; font-size: 0.62rem; color: var(--t4); min-width: 22px; padding-top: 0.12rem; }
+.qbt-body { flex: 1; }
+.qbt-q    { font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.88rem; color: var(--t1); line-height: 1.4; margin-bottom: 0.35rem; }
+.qbt-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.score-pill { display: inline-flex; align-items: center; font-family: 'Geist Mono', monospace; font-size: 0.65rem; padding: 0.18rem 0.55rem; border-radius: 99px; border: 1px solid; }
 
-/* ── Tip box ── */
-.tip-box {
-    background: rgba(0,229,255,0.02); border: 1px solid rgba(0,229,255,0.1);
-    border-radius: 10px; padding: 0.8rem 1.1rem;
-    font-family: 'DM Mono', monospace; font-size: 0.75rem;
-    color: rgba(0,229,255,0.5); margin-top: 0.8rem; line-height: 1.6;
-}
+/* ─── Comp bar ─── */
+.comp-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.45rem; }
+.comp-name  { font-family: 'Geist Mono', monospace; font-size: 0.66rem; color: var(--t2); min-width: 130px; }
+.comp-track { flex: 1; height: 2px; background: var(--b2); border-radius: 99px; overflow: hidden; }
+.comp-fill  { height: 100%; border-radius: 99px; }
+.comp-score { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.78rem; min-width: 28px; text-align: right; }
 
-/* ── Follow-up badge ── */
-.followup-badge {
-    display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.28rem 0.75rem;
-    background: rgba(244,63,94,0.07); border: 1px solid rgba(244,63,94,0.18); border-radius: 99px;
-    font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--rose); letter-spacing: 0.06em; margin-bottom: 0.8rem;
+/* ─── Follow-up strip ─── */
+.followup-strip {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+    padding: 0.25rem 0.75rem; border-radius: 99px; letter-spacing: 0.06em;
+    background: rgba(251,44,54,0.08); border: 1px solid rgba(251,44,54,0.2);
+    color: rgba(251,100,100,0.75); margin-bottom: 0.7rem;
 }
 
-/* ── Competency pill ── */
-.competency-pill {
-    display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem;
-    border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 0.68rem;
-    background: var(--surface3); border: 1px solid var(--border2); color: var(--text2); margin: 0.2rem;
+/* ─── Rec strip ─── */
+.rec-strip {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 1rem; background: rgba(251,44,54,0.04);
+    border: 1px solid rgba(251,44,54,0.15); border-radius: var(--r2); margin-bottom: 0.7rem;
 }
-.competency-score { font-weight: 700; margin-left: 0.3rem; }
+.rec-left { display: flex; align-items: center; gap: 0.45rem; font-family: 'Geist Mono', monospace; font-size: 0.7rem; color: rgba(251,100,100,0.7); }
+.rec-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--crimson); animation: blink-led 1s ease infinite; }
 
-/* ── Export block ── */
-.export-strip {
-    display: flex; align-items: center; gap: 1rem; padding: 1rem 1.4rem;
-    background: rgba(251,191,36,0.04); border: 1px solid rgba(251,191,36,0.15);
-    border-radius: 12px; margin-top: 1rem;
+/* ─── Tip box ─── */
+.tip {
+    background: rgba(0,212,255,0.02); border: 1px solid rgba(0,212,255,0.1);
+    border-radius: var(--r2); padding: 0.7rem 1rem;
+    font-family: 'Geist Mono', monospace; font-size: 0.72rem;
+    color: rgba(0,212,255,0.45); line-height: 1.6;
 }
-.export-icon { font-size: 1.4rem; }
-.export-info { flex: 1; }
-.export-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; color: var(--text); }
-.export-desc  { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--text3); margin-top: 0.15rem; }
+.tip.neon { color: rgba(167,139,250,0.55); border-color: rgba(124,58,237,0.15); background: rgba(124,58,237,0.02); }
 
-/* ── Difficulty badges ── */
-.diff-easy   { color: var(--emerald); }
-.diff-medium { color: var(--amber); }
-.diff-hard   { color: var(--rose); }
+/* ─── Skills match ─── */
+.skills-match {
+    display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.6rem;
+}
+.skill-tag {
+    font-family: 'Geist Mono', monospace; font-size: 0.62rem;
+    padding: 0.22rem 0.65rem; border-radius: var(--r1); border: 1px solid;
+}
+.sk-match   { background: rgba(0,200,150,0.08); color: rgba(0,200,150,0.7); border-color: rgba(0,200,150,0.2); }
+.sk-gap     { background: rgba(251,44,54,0.06); color: rgba(251,100,100,0.6); border-color: rgba(251,44,54,0.18); }
+.sk-neutral { background: var(--surface3); color: var(--t3); border-color: var(--b2); }
 
-/* ── Animations ── */
-@keyframes heroReveal {
-    from { opacity: 0; transform: translateY(24px); filter: blur(6px); }
-    to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+/* ─── Export block ─── */
+.export-block {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1rem 1.3rem;
+    background: rgba(251,191,36,0.03); border: 1px solid rgba(251,191,36,0.12);
+    border-radius: var(--r3);
 }
-@keyframes panelIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
+.export-icon  { font-size: 1.3rem; }
+.export-title { font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.88rem; color: var(--t1); }
+.export-desc  { font-family: 'Geist Mono', monospace; font-size: 0.62rem; color: var(--t3); margin-top: 0.15rem; }
+
+/* ─── Stat pills ─── */
+.stat-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem; }
+.stat-pill {
+    display: flex; flex-direction: column; align-items: center;
+    background: var(--surface3); border: 1px solid var(--b2); border-radius: var(--r2);
+    padding: 0.5rem 0.8rem; min-width: 56px;
 }
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-8px); }
-    to   { opacity: 1; transform: translateY(0); }
+.stat-num { font-family: 'Geist', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--electric); }
+.stat-lbl { font-family: 'Geist Mono', monospace; font-size: 0.58rem; color: var(--t4); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.15rem; }
+
+/* ─── Highlight analysis box ─── */
+.analysis-box {
+    background: var(--surface3); border: 1px solid var(--b2); border-radius: var(--r2);
+    padding: 0.9rem 1.1rem; margin-top: 0.8rem;
 }
-@keyframes slideRight {
-    from { opacity: 0; transform: translateX(-10px); }
-    to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
-@keyframes speakPulse {
-    0%   { transform: scale(1);   opacity: 0.4; }
-    100% { transform: scale(1.35); opacity: 0; }
-}
-@keyframes thinkPulse {
-    0%, 100% { box-shadow: 0 0 12px rgba(245,158,11,0.2); }
-    50%       { box-shadow: 0 0 30px rgba(245,158,11,0.4); }
-}
-@keyframes waveDance {
-    from { height: 4px; }
-    to   { height: var(--max-h); }
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50%       { transform: translateY(-6px); }
-}
-@keyframes shimmer {
-    from { background-position: -200% center; }
-    to   { background-position: 200% center; }
-}
+.ab-title { font-family: 'Geist Mono', monospace; font-size: 0.63rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); margin-bottom: 0.5rem; }
+
+/* ════════════════════════════════════════════════════════
+   ANIMATIONS
+════════════════════════════════════════════════════════ */
+@keyframes hero-in { from { opacity:0; transform:translateY(20px); filter:blur(8px); } to { opacity:1; transform:translateY(0); filter:blur(0); } }
+@keyframes panel-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slide-down  { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slide-right { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:translateX(0); } }
+@keyframes pulse-dot { 0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0.4)} 50%{box-shadow:0 0 0 4px rgba(0,212,255,0)} }
+@keyframes blink-led { 0%,100%{opacity:1} 50%{opacity:0.25} }
+@keyframes speak-pulse { 0%,100%{box-shadow:0 0 16px rgba(0,212,255,0.12)} 50%{box-shadow:0 0 28px rgba(0,212,255,0.3)} }
+@keyframes wave-dance { from{height:3px} to{height:var(--maxh)} }
 """
 
 st.markdown(f"<style>{DESIGN}</style>", unsafe_allow_html=True)
 
-# Waveform HTML builder
-def build_waveform():
+# ─────────────────────────────────────────────────────────────
+# UTILITY HTML BUILDERS
+# ─────────────────────────────────────────────────────────────
+def waveform_html(n=28, accent="var(--electric)"):
     bars = "".join([
-        f'<div class="wave-bar" style="--speed:{random.uniform(0.35,0.85):.2f}s;--max-h:{random.randint(14,42)}px;height:{random.randint(4,16)}px;opacity:{random.uniform(0.45,0.9):.2f};background:{"var(--cyan)" if i % 3 != 2 else "var(--violet)"};"></div>'
-        for i in range(32)
+        f'<div class="wave-b" style="--spd:{random.uniform(0.3,0.8):.2f}s;--maxh:{random.randint(12,38)}px;height:{random.randint(3,12)}px;opacity:{random.uniform(0.4,0.85):.2f};background:{accent if i%3!=2 else "var(--neon)"};"></div>'
+        for i in range(n)
     ])
-    return f'<div class="waveform-wrap">{bars}</div>'
+    return f'<div class="wave">{bars}</div>'
 
-# Progress ring SVG builder
-def score_ring_svg(score: float, size=88, stroke=5):
+def ring_svg(score: float, size=80, stroke=5):
     r = (size / 2) - stroke
-    circ = 2 * 3.14159 * r
+    circ = 2 * math.pi * r
     pct = min(score / 10.0, 1.0)
     dash = pct * circ
-    color = "#10b981" if score >= 7 else "#f59e0b" if score >= 5 else "#f43f5e"
+    color = "#00c896" if score >= 7 else "#fbbf24" if score >= 5 else "#fb2c36"
+    glow = color + "55"
     return f"""
-    <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" class="progress-ring-svg">
-        <circle cx="{size/2}" cy="{size/2}" r="{r}" fill="none" stroke="#162035" stroke-width="{stroke}"/>
+    <svg width="{size}" height="{size}" viewBox="0 0 {size} {size}" class="ring-svg">
+        <circle cx="{size/2}" cy="{size/2}" r="{r}" fill="none" stroke="#0f1e35" stroke-width="{stroke}"/>
         <circle cx="{size/2}" cy="{size/2}" r="{r}" fill="none" stroke="{color}" stroke-width="{stroke}"
             stroke-dasharray="{dash:.1f} {circ:.1f}" stroke-linecap="round"
-            style="filter: drop-shadow(0 0 6px {color}66)"/>
-    </svg>
-    """
+            style="filter:drop-shadow(0 0 5px {glow})"/>
+    </svg>"""
 
-# ============================================================
-# INTERVIEWER PERSONAS
-# ============================================================
+# ─────────────────────────────────────────────────────────────
+# INTERVIEWER PERSONAS v2
+# ─────────────────────────────────────────────────────────────
 PERSONAS = {
     "Ketu": {
-        "name": "Ketu",
-        "title": "Senior AI Interviewer",
-        "avatar": "🤖",
-        "style": "balanced, thoughtful, and encouraging",
+        "name": "Ketu", "title": "Senior AI Interviewer", "avatar": "🤖",
+        "style": "balanced, thoughtful, and genuinely curious",
+        "color": "var(--electric)",
         "greetings": [
-            "Great to meet you! I've reviewed your profile carefully — I'm genuinely excited to learn more about your journey.",
-            "Welcome! I've gone through your background and the role requirements. Let's have an honest conversation.",
-            "Hello! I've prepared some targeted questions for you. Take your time — there are no trick questions here.",
+            "Great to meet you! I've carefully reviewed your profile. I'm genuinely excited to explore your journey.",
+            "Welcome! I've gone through your background and the role requirements thoroughly. Let's have an honest conversation.",
+            "Hello! I've prepared some tailored questions for you today. Take your time — I'm here to understand you, not catch you out.",
         ],
         "transitions": [
-            "Interesting — thanks for sharing that. Let me move to the next area.",
-            "Got it, I appreciate your openness. Moving on…",
-            "That's helpful context. Let's continue.",
-            "Thank you. Here's my next question for you.",
+            "Interesting — thank you for sharing that. Let me move to the next area.",
+            "I appreciate your openness. Let's continue.",
+            "That's helpful context. Here's my next question.",
+            "Good. Moving on…",
         ],
+        "thinking": ["Reviewing your answer…", "Analysing your response…", "Processing what you said…"],
     },
     "Aria": {
-        "name": "Aria",
-        "title": "Technical Director · KETU",
-        "avatar": "🧬",
-        "style": "technical, precise, and deeply analytical",
+        "name": "Aria", "title": "Technical Director", "avatar": "🧬",
+        "style": "technical, precise, analytically rigorous, and direct",
+        "color": "var(--neon)",
         "greetings": [
-            "I'll be direct: I want to understand how you think, not just what you know. Let's begin.",
-            "I've reviewed your technical background. I'll be asking you to go deep — that's how we find out what you're really capable of.",
+            "I'll be direct: I want to understand how you think, not just what you've memorised. Let's begin.",
+            "I've reviewed your technical background in detail. I'll be asking you to go deep — that's how we find out what you're genuinely capable of.",
         ],
         "transitions": [
             "Noted. Let's test another dimension.",
-            "That answer raises an interesting follow-up. Let me probe further.",
-            "Understood. Moving on.",
+            "That's an interesting angle. Moving on.",
+            "Understood. Next question.",
         ],
+        "thinking": ["Running technical analysis…", "Evaluating depth of answer…", "Checking technical precision…"],
     },
     "Marcus": {
-        "name": "Marcus",
-        "title": "Culture Lead · KETU",
-        "avatar": "🌿",
-        "style": "empathetic, culture-focused, and people-oriented",
+        "name": "Marcus", "title": "Culture & Values Lead", "avatar": "🌿",
+        "style": "empathetic, culture-focused, human-centred, and values-driven",
+        "color": "var(--jade)",
         "greetings": [
             "I want this to feel like a real conversation — not an interrogation. I'm genuinely curious about who you are.",
-            "Welcome! I focus on values, teamwork, and the human side of work. Let's explore that together.",
+            "Welcome! I focus on values, teamwork, and the human side of work. Let's explore that together today.",
         ],
         "transitions": [
-            "I appreciate your honesty. Let's explore another dimension.",
-            "That's really telling — thank you. Let me ask about something different now.",
+            "I really appreciate your honesty there. Let's explore another dimension.",
+            "That's genuinely telling — thank you. Let me ask about something different.",
             "Good. Let's keep going.",
         ],
-    }
+        "thinking": ["Reflecting on your answer…", "Considering cultural fit…", "Reading between the lines…"],
+    },
+    "Nova": {
+        "name": "Nova", "title": "Product Strategy Lead", "avatar": "🚀",
+        "style": "product-minded, strategic, data-driven, and challenge-seeking",
+        "color": "var(--plasma)",
+        "greetings": [
+            "I'm going to push you to think like a product thinker — not just a practitioner. Let's explore your strategic instincts.",
+            "Hi! I care about how you frame problems and measure success. Ready to think out loud with me?",
+        ],
+        "transitions": [
+            "That's a good instinct. Let me challenge you further.",
+            "Noted. Let's dig into product thinking next.",
+            "Interesting framing. Moving on.",
+        ],
+        "thinking": ["Evaluating strategic thinking…", "Assessing product instincts…", "Analysing your reasoning…"],
+    },
 }
 
 QUESTION_TYPES = {
-    "rapport":     ("💬", "badge-rapport",     "Rapport"),
-    "technical":   ("⚙️", "badge-technical",   "Technical"),
-    "behavioral":  ("🧠", "badge-behavioral",  "Behavioral"),
-    "situational": ("🎯", "badge-situational", "Situational"),
-    "ambition":    ("🚀", "badge-ambition",    "Forward-looking"),
+    "rapport":     ("💬", "qb-rapport",  "Rapport"),
+    "technical":   ("⚙️", "qb-tech",    "Technical"),
+    "behavioral":  ("🧠", "qb-behav",   "Behavioral"),
+    "situational": ("🎯", "qb-sit",     "Situational"),
+    "ambition":    ("🚀", "qb-ambition","Forward-looking"),
 }
 
 INTERVIEW_MODES = {
-    "Casual":   {"pressure": "low",  "followup_threshold": 4.0, "max_followups": 1, "emoji": "🌿", "desc": "Relaxed pace, supportive tone"},
-    "Standard": {"pressure": "med",  "followup_threshold": 5.5, "max_followups": 2, "emoji": "⚡", "desc": "Professional, balanced assessment"},
-    "Intense":  {"pressure": "high", "followup_threshold": 7.0, "max_followups": 3, "emoji": "🔥", "desc": "High-pressure, rigorous evaluation"},
+    "Casual":   {"pressure": "low",  "followup_threshold": 4.0, "max_followups": 1, "emoji": "🌿", "desc": "Relaxed pace, supportive tone", "pill_cls": "pill-jade"},
+    "Standard": {"pressure": "med",  "followup_threshold": 5.5, "max_followups": 2, "emoji": "⚡", "desc": "Professional, balanced assessment", "pill_cls": "pill-elec"},
+    "Intense":  {"pressure": "high", "followup_threshold": 7.0, "max_followups": 3, "emoji": "🔥", "desc": "High-pressure, rigorous evaluation", "pill_cls": "pill-fire"},
 }
 
 COMPETENCY_FRAMEWORKS = {
-    "Engineering":    ["Problem Solving", "Technical Depth", "System Design", "Collaboration", "Communication", "Growth Mindset"],
-    "Management":     ["Leadership", "Strategic Thinking", "Communication", "Conflict Resolution", "Decision Making", "Mentoring"],
-    "Product":        ["Product Sense", "Data Analysis", "User Empathy", "Prioritization", "Communication", "Execution"],
-    "Design":         ["Visual Thinking", "User Research", "Communication", "Iteration", "Craft", "Business Acumen"],
-    "Sales/BD":       ["Persuasion", "Relationship Building", "Resilience", "Product Knowledge", "Communication", "Closing"],
-    "Data/Analytics": ["Statistical Thinking", "SQL/Tooling", "Communication", "Problem Framing", "Visualization", "Business Acumen"],
+    "Engineering":    ["Problem Solving", "Technical Depth", "System Design", "Code Quality", "Collaboration", "Communication", "Growth Mindset"],
+    "Management":     ["Leadership", "Strategic Thinking", "Communication", "Conflict Resolution", "Decision Making", "Mentoring", "Execution"],
+    "Product":        ["Product Sense", "Data Analysis", "User Empathy", "Prioritization", "Communication", "Execution", "Strategy"],
+    "Design":         ["Visual Thinking", "User Research", "Communication", "Craft", "Iteration", "Business Acumen", "Storytelling"],
+    "Sales/BD":       ["Persuasion", "Relationship Building", "Resilience", "Product Knowledge", "Communication", "Pipeline Management", "Closing"],
+    "Data/Analytics": ["Statistical Thinking", "SQL/Tooling", "Communication", "Problem Framing", "Visualization", "Business Acumen", "Experimentation"],
+    "Marketing":      ["Brand Thinking", "Data Analysis", "Creativity", "Communication", "Campaign Strategy", "Growth Mindset", "Audience Insight"],
+    "Operations":     ["Process Design", "Problem Solving", "Stakeholder Management", "Execution", "Data-Driven Decision Making", "Resilience", "Communication"],
 }
 
-POSITIVE_TONE_SIGNALS = {"Confident", "Structured", "Concise", "Detailed", "Passionate", "Analytical", "Creative", "Experienced", "Thoughtful"}
-NEGATIVE_TONE_SIGNALS = {"Vague", "Nervous", "Hesitant", "Rambling", "Unprepared"}
+POSITIVE_TONE = {"Confident", "Structured", "Concise", "Detailed", "Passionate", "Analytical", "Creative", "Experienced", "Thoughtful", "Authentic", "Polished"}
+NEGATIVE_TONE = {"Vague", "Nervous", "Hesitant", "Rambling", "Unprepared"}
 
-# ============================================================
+FILLER_WORDS = {"um", "uh", "like", "you know", "basically", "literally", "actually", "sort of", "kind of", "i mean", "right", "so yeah", "honestly", "obviously", "clearly"}
+
+# ─────────────────────────────────────────────────────────────
 # SESSION STATE
-# ============================================================
+# ─────────────────────────────────────────────────────────────
 def init_state():
     defaults = {
-        "screen":             "setup",
-        "questions":          [],
-        "q_types":            [],
-        "q_competencies":     [],
-        "q_difficulties":     [],
-        "current":            0,
-        "scores":             [],
-        "feedback_list":      [],
-        "resume_text":        "",
-        "jd_text":            "",
-        "candidate_name":     "",
-        "role_title":         "",
-        "num_questions":      8,
-        "session_start":      None,
-        "q_start":            None,
-        "time_per_q":         [],
-        "tts_enabled":        True,
-        "submitted":          False,
-        "current_feedback":   None,
-        "Ketu_message":       "",
-        "is_followup":        False,
-        "followup_count":     0,
-        "transcript":         [],
-        "persona":            "Ketu",
-        "interview_mode":     "Standard",
-        "competency_scores":  {},
-        "filler_word_counts": [],
-        "word_counts":        [],
-        "ai_summary":         None,
-        "star_analyses":      [],
-        "category_tag":       "Engineering",
+        "screen": "setup",
+        "questions": [], "q_types": [], "q_competencies": [], "q_difficulties": [],
+        "current": 0, "scores": [], "feedback_list": [],
+        "resume_text": "", "jd_text": "", "resume_profile": None,
+        "candidate_name": "", "role_title": "",
+        "num_questions": 8, "session_start": None, "q_start": None,
+        "tts_enabled": True, "submitted": False,
+        "current_feedback": None, "ketu_message": "",
+        "is_followup": False, "followup_count": 0,
+        "transcript": [],
+        "persona": "Ketu", "interview_mode": "Standard", "category_tag": "Engineering",
+        "competency_scores": {}, "filler_counts": [], "word_counts": [],
+        "ai_summary": None, "session_history": [], "camera_enabled": False,
+        "show_hints": True,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -762,413 +834,522 @@ def init_state():
 
 init_state()
 
-# ============================================================
-# LLM SETUP
-# ============================================================
+# ─────────────────────────────────────────────────────────────
+# MODELS
+# ─────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
 def get_llm():
     try:
-        return ChatGroq(
-            temperature=0.4,
-            model_name="llama-3.3-70b-versatile",
-            api_key=st.secrets["GROQ_API_KEY"],
-        )
+        return ChatGroq(temperature=0.4, model_name="llama-3.3-70b-versatile", api_key=st.secrets["GROQ_API_KEY"])
     except Exception:
         return None
 
 @st.cache_resource(show_spinner=False)
 def get_embeddings():
-    class LocalEmbeddings:
-        def __init__(self):
-            self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu")
-        def embed_documents(self, texts):
-            return self.model.encode(texts, normalize_embeddings=True, convert_to_numpy=True, show_progress_bar=False).tolist()
-        def embed_query(self, text):
-            return self.model.encode([text], normalize_embeddings=True, convert_to_numpy=True, show_progress_bar=False)[0].tolist()
-    return LocalEmbeddings()
+    class Local:
+        def __init__(self): self.m = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu")
+        def embed_documents(self, texts): return self.m.encode(texts, normalize_embeddings=True, convert_to_numpy=True, show_progress_bar=False).tolist()
+        def embed_query(self, text): return self.m.encode([text], normalize_embeddings=True, convert_to_numpy=True, show_progress_bar=False)[0].tolist()
+    return Local()
 
-# ============================================================
+# ─────────────────────────────────────────────────────────────
 # TTS
-# ============================================================
-def tts_autoplay(text: str):
-    if not st.session_state.get("tts_enabled", True):
+# ─────────────────────────────────────────────────────────────
+def tts_play(text: str):
+    if not st.session_state.get("tts_enabled", True) or not text:
         return
     try:
-        tts = gTTS(text=text, lang="en", slow=False)
         buf = BytesIO()
-        tts.write_to_fp(buf)
+        gTTS(text=text[:500], lang="en", slow=False).write_to_fp(buf)
         buf.seek(0)
         b64 = base64.b64encode(buf.read()).decode()
-        st.markdown(
-            f'<audio autoplay style="display:none"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>',
-            unsafe_allow_html=True,
-        )
+        st.markdown(f'<audio autoplay style="display:none"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>', unsafe_allow_html=True)
     except Exception:
         pass
 
-# ============================================================
-# TRANSCRIPTION (Groq Whisper)
-# ============================================================
-def transcribe_voice(audio_bytes: bytes) -> str:
+# ─────────────────────────────────────────────────────────────
+# TRANSCRIPTION
+# ─────────────────────────────────────────────────────────────
+def transcribe(audio_bytes: bytes) -> str:
     try:
         from groq import Groq
         gc = Groq(api_key=st.secrets["GROQ_API_KEY"])
         buf = io.BytesIO(audio_bytes)
         buf.name = "audio.wav"
-        result = gc.audio.transcriptions.create(model="whisper-large-v3-turbo", file=buf)
-        return result.text.strip()
+        return gc.audio.transcriptions.create(model="whisper-large-v3-turbo", file=buf).text.strip()
     except Exception as e:
         st.warning(f"⚠️ Transcription failed: {e}")
         return ""
 
-# ============================================================
+# ─────────────────────────────────────────────────────────────
 # DOCUMENT LOADER
-# ============================================================
-def load_document(uploaded_file) -> str:
-    suffix = uploaded_file.name.rsplit(".", 1)[-1].lower()
-    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{suffix}") as tmp:
-        tmp.write(uploaded_file.getvalue())
-        temp_path = tmp.name
+# ─────────────────────────────────────────────────────────────
+def load_doc(f) -> str:
+    ext = f.name.rsplit(".", 1)[-1].lower()
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}") as tmp:
+        tmp.write(f.getvalue()); path = tmp.name
     try:
-        if suffix == "pdf":
-            docs = PyPDFLoader(temp_path).load()
-            return "\n".join(d.page_content for d in docs)
-        elif suffix in ("docx", "doc"):
-            docs = Docx2txtLoader(temp_path).load()
-            return docs[0].page_content if docs else ""
-        else:
-            return uploaded_file.getvalue().decode("utf-8", errors="ignore")
+        if ext == "pdf":   return "\n".join(d.page_content for d in PyPDFLoader(path).load())
+        if ext in ("docx","doc"): docs = Docx2txtLoader(path).load(); return docs[0].page_content if docs else ""
+        return f.getvalue().decode("utf-8", errors="ignore")
     finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        if os.path.exists(path): os.remove(path)
 
-# ============================================================
-# ADVANCED QUESTION GENERATION
-# ============================================================
-def generate_questions(jd: str, resume: str, role: str, n: int, llm, persona_name: str, mode: str, category: str) -> tuple:
-    persona = PERSONAS.get(persona_name, PERSONAS["Ketu"])
-    competencies = COMPETENCY_FRAMEWORKS.get(category, COMPETENCY_FRAMEWORKS["Engineering"])
-    comp_str = ", ".join(competencies)
-    mode_cfg = INTERVIEW_MODES.get(mode, INTERVIEW_MODES["Standard"])
+# ─────────────────────────────────────────────────────────────
+# RESUME ANALYSIS (NEW)
+# ─────────────────────────────────────────────────────────────
+def analyze_resume(resume_text: str, jd_text: str, role: str, llm) -> dict:
+    prompt = f"""Analyse this resume against the job description for: {role}
 
-    prompt = f"""You are {persona['name']}, a {persona['style']} AI interviewer at KETU.
-You are conducting a {mode} ({mode_cfg['pressure']}-pressure) interview for: {role}
-
-KEY COMPETENCIES TO ASSESS: {comp_str}
+RESUME:
+{resume_text[:3000]}
 
 JOB DESCRIPTION:
-{jd[:2800]}
-
-CANDIDATE RESUME:
-{resume[:2800]}
-
-Generate exactly {n} insightful, tailored interview questions.
-
-Structure:
-- Q1-2: rapport (warm, personal, background-focused)
-- Q3-{max(4, n-3)}: technical/behavioral (deep skill assessment, map to competencies)
-- Q{max(4, n-3)+1}-{n-1}: situational/behavioral (STAR-method scenarios, real challenges)
-- Q{n}: ambition (forward-looking, growth-oriented)
-
-Rules for {mode} mode:
-{"- Keep tone light and supportive. Focus on broad understanding." if mode == "Casual" else ""}
-{"- Balanced depth. Probe for specifics without being aggressive." if mode == "Standard" else ""}
-{"- Ask hard, multi-part questions. Push for edge cases, trade-offs, failures." if mode == "Intense" else ""}
-- Reference SPECIFIC skills and experiences from the resume
-- Vary sentence structure — some short, some multi-part
-- Assign difficulty: easy/medium/hard
-- Map each question to one competency from: {comp_str}
+{jd_text[:2000]}
 
 Return ONLY this JSON (no markdown, no extra text):
 {{
-  "questions": ["q1", "q2", ...],
-  "types": ["rapport", "technical", ...],
-  "competencies": ["Communication", "Technical Depth", ...],
-  "difficulties": ["easy", "medium", "hard", ...]
+  "candidate_name": "<extracted name or 'Candidate'>",
+  "current_role": "<most recent job title>",
+  "years_experience": "<estimated years, e.g. '5 years'>",
+  "top_skills": ["skill1", "skill2", "skill3", "skill4", "skill5"],
+  "matching_skills": ["skill that matches JD", ...],
+  "gap_skills": ["skill in JD but not resume", ...],
+  "education": "<highest degree + field>",
+  "companies": ["company1", "company2", "company3"],
+  "strengths": ["strength1", "strength2", "strength3"],
+  "red_flags": ["potential concern1"] or [],
+  "overall_fit_score": <0-10 float>,
+  "fit_rationale": "<1-2 sentences on candidate-role fit>"
 }}
-
-Types: rapport, technical, behavioral, situational, ambition
 """
-    response = llm.invoke(prompt)
     try:
-        raw = response.content.strip()
-        if raw.startswith("```"):
-            raw = re.sub(r"```(?:json)?", "", raw).strip().rstrip("```").strip()
-        data = json.loads(raw)
-        questions    = data.get("questions", [])[:n]
-        types        = data.get("types", ["technical"] * n)[:n]
-        competencies_list = data.get("competencies", ["Technical Depth"] * n)[:n]
-        difficulties = data.get("difficulties", ["medium"] * n)[:n]
-        while len(types) < len(questions):        types.append("technical")
-        while len(competencies_list) < len(questions): competencies_list.append("Technical Depth")
-        while len(difficulties) < len(questions): difficulties.append("medium")
-        return questions, types, competencies_list, difficulties
-    except Exception:
-        questions, types, comps, diffs = [], [], [], []
-        for line in response.content.splitlines():
-            line = line.strip()
-            if line and re.match(r'^\d+[.)\-]', line):
-                cleaned = re.sub(r'^\d+[.)\-]\s*', '', line).strip()
-                if cleaned:
-                    questions.append(cleaned)
-                    types.append("technical")
-                    comps.append("Technical Depth")
-                    diffs.append("medium")
-        return questions[:n], types[:n], comps[:n], diffs[:n]
-
-# ============================================================
-# FILLER WORD ANALYSIS
-# ============================================================
-FILLER_WORDS = {"um", "uh", "like", "you know", "basically", "literally", "actually", "sort of", "kind of", "i mean", "right", "so yeah", "honestly"}
-
-def analyze_answer_quality(answer: str) -> dict:
-    words = answer.lower().split()
-    word_count = len(words)
-    sentences = [s.strip() for s in re.split(r'[.!?]+', answer) if s.strip()]
-    sentence_count = max(len(sentences), 1)
-    avg_sentence_len = word_count / sentence_count
-
-    # Filler word count
-    text_lower = answer.lower()
-    filler_count = sum(text_lower.count(fw) for fw in FILLER_WORDS)
-    filler_density = filler_count / max(word_count, 1)
-
-    # STAR detection
-    star_signals = {
-        "Situation": bool(re.search(r'\b(when|once|at my|in my|during|while working|we were|i was)\b', text_lower)),
-        "Task":      bool(re.search(r'\b(had to|needed to|responsible for|my role was|tasked with|goal was|objective)\b', text_lower)),
-        "Action":    bool(re.search(r'\b(i did|i built|i wrote|i led|i implemented|i created|i designed|i worked|i developed|i resolved)\b', text_lower)),
-        "Result":    bool(re.search(r'\b(result|outcome|achieved|improved|reduced|increased|saved|delivered|shipped|launched|percent|%|metric)\b', text_lower)),
-    }
-    star_score = sum(star_signals.values())
-
-    # Verbosity (ideal: 80-250 words)
-    if word_count < 30:      verbosity = "too_short"
-    elif word_count < 80:    verbosity = "short"
-    elif word_count <= 250:  verbosity = "ideal"
-    elif word_count <= 400:  verbosity = "long"
-    else:                    verbosity = "too_long"
-
-    # Coaching hint
-    if verbosity == "too_short":
-        hint = ("warn", "💡", "Your answer is very brief — try to expand with context and a specific example.")
-    elif verbosity == "short":
-        hint = ("warn", "✍️", "Consider adding more detail — what was the outcome or result?")
-    elif filler_density > 0.06:
-        hint = ("warn", "🎙️", f"High use of filler words detected ({filler_count}x). Try to speak more deliberately.")
-    elif star_score == 4 and verbosity == "ideal":
-        hint = ("good", "✨", "Great structure — Situation, Task, Action and Result are all covered!")
-    elif verbosity == "too_long":
-        hint = ("warn", "✂️", "Consider tightening your answer — aim for the most impactful details.")
-    elif star_score >= 3:
-        hint = ("good", "🟢", "Good structure! You're covering the key components well.")
-    else:
-        hint = ("info", "💡", "Try to ground your answer in a specific real example with a measurable outcome.")
-
-    return {
-        "word_count":     word_count,
-        "filler_count":   filler_count,
-        "filler_density": filler_density,
-        "star_signals":   star_signals,
-        "star_score":     star_score,
-        "verbosity":      verbosity,
-        "coaching_hint":  hint,
-        "avg_sentence_len": avg_sentence_len,
-    }
-
-# ============================================================
-# ADVANCED ANSWER EVALUATION
-# ============================================================
-def evaluate_answer(question: str, answer: str, role: str, q_type: str, competency: str, mode: str, persona_name: str, llm, conversation_context: list = None) -> dict:
-    persona = PERSONAS.get(persona_name, PERSONAS["Ketu"])
-    mode_cfg = INTERVIEW_MODES.get(mode, INTERVIEW_MODES["Standard"])
-    context_str = ""
-    if conversation_context:
-        recent = conversation_context[-4:]
-        context_str = "\n".join([f"{m['role'].upper()}: {m['content'][:200]}" for m in recent])
-
-    prompt = f"""You are {persona['name']}, a {persona['style']} AI interviewer evaluating a {role} candidate.
-Interview mode: {mode} ({mode_cfg['pressure']}-pressure)
-Question type: {q_type}
-Competency being assessed: {competency}
-
-{"RECENT CONVERSATION CONTEXT:\n" + context_str if context_str else ""}
-
-QUESTION: {question}
-
-CANDIDATE ANSWER: {answer}
-
-Evaluate with expert precision. Consider the {mode} mode — {"be lenient" if mode == "Casual" else "be rigorous" if mode == "Intense" else "be balanced"}.
-
-Return ONLY this JSON (no markdown):
-{{
-  "score": <0-10 float>,
-  "competency_score": <0-10 float for specifically '{competency}'>,
-  "verdict": "<Exceptional|Strong|Solid|Average|Weak>",
-  "strength": "<specific 1-sentence strength>",
-  "weakness": "<specific 1-sentence gap or missing element>",
-  "suggestion": "<concrete, actionable 1-sentence tip>",
-  "star_feedback": "<1 sentence on STAR method use if behavioral, else empty string>",
-  "tone_signals": ["<signal1>", "<signal2>", "<signal3>"],
-  "needs_followup": <true|false>,
-  "followup_question": "<a natural follow-up if score < {mode_cfg['followup_threshold']} or answer was vague, else empty string>",
-  "Ketu_reaction": "<1 short sentence {persona['name']} would say after this answer, in first person, as {persona['name']}, conversational>",
-  "ideal_answer_hint": "<1-2 sentence outline of what a strong answer would have included>"
-}}
-
-tone_signals: pick 3 from [Confident, Structured, Vague, Concise, Detailed, Nervous, Passionate, Hesitant, Analytical, Creative, Experienced, Rambling, Thoughtful, Unprepared, Authentic, Polished]
-"""
-    response = llm.invoke(prompt)
-    try:
-        raw = response.content.strip()
-        if raw.startswith("```"):
-            raw = re.sub(r"```(?:json)?", "", raw).strip().rstrip("```").strip()
-        result = json.loads(raw)
-        result["score"] = min(10.0, max(0.0, float(result.get("score", 5))))
-        result["competency_score"] = min(10.0, max(0.0, float(result.get("competency_score", result["score"]))))
-        return result
+        raw = llm.invoke(prompt).content.strip()
+        if raw.startswith("```"): raw = re.sub(r"```(?:json)?", "", raw).strip().rstrip("```").strip()
+        return json.loads(raw)
     except Exception:
         return {
-            "score": 5.0, "competency_score": 5.0, "verdict": "Average",
-            "strength": "Answer was provided.",
-            "weakness": "Could not fully evaluate.",
-            "suggestion": "Try to be more specific and structured using the STAR method.",
-            "star_feedback": "",
-            "tone_signals": ["Thoughtful"],
-            "needs_followup": False,
-            "followup_question": "",
-            "Ketu_reaction": "Thanks for sharing that.",
-            "ideal_answer_hint": "Include a specific example with a measurable outcome.",
+            "candidate_name": "Candidate", "current_role": "Professional",
+            "years_experience": "N/A", "top_skills": [], "matching_skills": [],
+            "gap_skills": [], "education": "N/A", "companies": [],
+            "strengths": [], "red_flags": [], "overall_fit_score": 5.0,
+            "fit_rationale": "Resume analysis unavailable."
         }
 
-# ============================================================
-# POST-INTERVIEW SUMMARY
-# ============================================================
-def generate_summary(feedback_list: list, role: str, candidate_name: str, avg_score: float, persona_name: str, mode: str, llm) -> str:
+# ─────────────────────────────────────────────────────────────
+# QUESTION GENERATION v2
+# ─────────────────────────────────────────────────────────────
+def gen_questions(jd, resume, role, n, llm, persona_name, mode, category, resume_profile=None) -> tuple:
+    persona = PERSONAS.get(persona_name, PERSONAS["Ketu"])
+    comps = COMPETENCY_FRAMEWORKS.get(category, COMPETENCY_FRAMEWORKS["Engineering"])
+    comp_str = ", ".join(comps)
+    mode_cfg = INTERVIEW_MODES.get(mode, INTERVIEW_MODES["Standard"])
+
+    profile_context = ""
+    if resume_profile:
+        skills_str = ", ".join(resume_profile.get("top_skills", [])[:5])
+        gap_str = ", ".join(resume_profile.get("gap_skills", [])[:3])
+        profile_context = f"\nCANDIDATE PROFILE INSIGHTS: Skills: {skills_str} | Gaps to probe: {gap_str}"
+
+    prompt = f"""You are {persona['name']}, a {persona['style']} AI interviewer.
+Interview type: {mode} ({mode_cfg['pressure']}-pressure) | Role: {role}
+Competency framework: {comp_str}{profile_context}
+
+JOB DESCRIPTION:
+{jd[:2500]}
+
+CANDIDATE RESUME:
+{resume[:2500]}
+
+Generate exactly {n} tailored questions. Structure:
+- Q1-2: rapport (warm, personal, background-focused)
+- Q3-{max(4,n-3)}: technical/behavioral (deep, mapped to specific competencies, reference resume details)
+- Q{max(4,n-3)+1}-{n-1}: situational (STAR-worthy scenarios, real challenges)
+- Q{n}: ambition/growth (forward-looking)
+
+Mode {mode} rules:
+{"Supportive, accessible, broad strokes." if mode=="Casual" else ""}
+{"Professional depth, balanced probing." if mode=="Standard" else ""}
+{"Multi-part, edge cases, trade-offs, failures, pushback." if mode=="Intense" else ""}
+
+Return ONLY valid JSON:
+{{
+  "questions": ["q1",...],
+  "types": ["rapport","technical",...],
+  "competencies": ["Communication",...],
+  "difficulties": ["easy","medium","hard",...]
+}}
+Types: rapport, technical, behavioral, situational, ambition
+"""
+    resp = llm.invoke(prompt)
+    try:
+        raw = resp.content.strip()
+        if raw.startswith("```"): raw = re.sub(r"```(?:json)?","",raw).strip().rstrip("```").strip()
+        d = json.loads(raw)
+        qs   = d.get("questions",[])[:n]
+        ts   = d.get("types",["technical"]*n)[:n]
+        cs   = d.get("competencies",["Technical Depth"]*n)[:n]
+        dfs  = d.get("difficulties",["medium"]*n)[:n]
+        while len(ts) < len(qs):  ts.append("technical")
+        while len(cs) < len(qs):  cs.append("Technical Depth")
+        while len(dfs) < len(qs): dfs.append("medium")
+        return qs, ts, cs, dfs
+    except Exception:
+        qs, ts, cs, dfs = [], [], [], []
+        for line in resp.content.splitlines():
+            line = line.strip()
+            if re.match(r'^\d+[.)\-]', line):
+                cleaned = re.sub(r'^\d+[.)\-]\s*','',line).strip()
+                if cleaned:
+                    qs.append(cleaned); ts.append("technical"); cs.append("Technical Depth"); dfs.append("medium")
+        return qs[:n], ts[:n], cs[:n], dfs[:n]
+
+# ─────────────────────────────────────────────────────────────
+# ANSWER QUALITY ANALYSIS (enhanced)
+# ─────────────────────────────────────────────────────────────
+def analyze_quality(answer: str) -> dict:
+    words = answer.lower().split()
+    wc = len(words)
+    text = answer.lower()
+    sentences = [s.strip() for s in re.split(r'[.!?]+', answer) if s.strip()]
+    sc = max(len(sentences), 1)
+
+    filler_count = sum(text.count(f) for f in FILLER_WORDS)
+    filler_pct   = filler_count / max(wc, 1)
+
+    star = {
+        "Situation": bool(re.search(r'\b(when|once|at my|in my|during|while working|we were|i was|back at|last year|previously)\b', text)),
+        "Task":      bool(re.search(r'\b(had to|needed to|responsible for|my role|tasked with|goal was|objective|challenge was)\b', text)),
+        "Action":    bool(re.search(r'\b(i did|i built|i wrote|i led|i implemented|i created|i designed|i worked|i developed|i resolved|i decided|i introduced|i proposed|i initiated)\b', text)),
+        "Result":    bool(re.search(r'\b(result|outcome|achieved|improved|reduced|increased|saved|delivered|shipped|launched|percent|%|metric|measur|impact|generated|won|closed)\b', text)),
+    }
+    star_score = sum(star.values())
+
+    # Specificity signals
+    has_numbers     = bool(re.search(r'\b\d+\b', answer))
+    has_percentages = bool(re.search(r'\d+\s*%', answer))
+    has_timeframes  = bool(re.search(r'\b(week|month|quarter|year|day|sprint|cycle)\b', text))
+    specificity = sum([has_numbers, has_percentages, has_timeframes])
+
+    if wc < 30:     verbosity = "too_short"
+    elif wc < 80:   verbosity = "short"
+    elif wc <= 250: verbosity = "ideal"
+    elif wc <= 400: verbosity = "long"
+    else:           verbosity = "too_long"
+
+    # Coaching logic
+    if verbosity == "too_short":    hint = ("warn",    "💡", "Very brief — try expanding with context and a real example.")
+    elif verbosity == "short":       hint = ("warn",    "✍️", "Consider adding more detail — what was the measurable outcome?")
+    elif filler_pct > 0.07:          hint = ("warn",    "🎙️", f"High filler word density detected ({filler_count}×). Speak more deliberately.")
+    elif star_score == 4 and 80<=wc<=250: hint = ("success","✨", "Excellent! Full STAR coverage with ideal length — strong response.")
+    elif verbosity == "too_long":    hint = ("warn",    "✂️", "Consider tightening up — focus on the most impactful details.")
+    elif star_score >= 3:            hint = ("success", "🟢", "Good structure — you're covering the key STAR components.")
+    elif specificity >= 2:           hint = ("success", "📊", "Good use of specifics and data — that strengthens your answer.")
+    else:                            hint = ("info",    "🎯", "Ground your answer in a specific real example with a measurable result.")
+
+    return {
+        "wc": wc, "filler_count": filler_count, "filler_pct": filler_pct,
+        "star": star, "star_score": star_score, "verbosity": verbosity,
+        "hint": hint, "specificity": specificity,
+        "avg_sentence_len": wc / sc,
+    }
+
+# ─────────────────────────────────────────────────────────────
+# EVALUATION v2
+# ─────────────────────────────────────────────────────────────
+def evaluate(q, answer, role, q_type, competency, mode, persona_name, llm, context=None) -> dict:
+    persona = PERSONAS.get(persona_name, PERSONAS["Ketu"])
+    mode_cfg = INTERVIEW_MODES.get(mode, INTERVIEW_MODES["Standard"])
+    ctx = ""
+    if context:
+        ctx = "\n".join([f"{m['role'].upper()}: {m['content'][:200]}" for m in context[-4:]])
+
+    prompt = f"""You are {persona['name']}, a {persona['style']} AI interviewer evaluating a {role} candidate.
+Mode: {mode} ({mode_cfg['pressure']}-pressure) | Q-type: {q_type} | Competency: {competency}
+{"CONTEXT:\n"+ctx if ctx else ""}
+
+QUESTION: {q}
+ANSWER: {answer}
+
+Be {"lenient and encouraging" if mode=="Casual" else "rigorous and exacting" if mode=="Intense" else "balanced and fair"}.
+
+Return ONLY valid JSON:
+{{
+  "score": <0-10 float>,
+  "competency_score": <0-10 float for '{competency}'>,
+  "verdict": "<Exceptional|Strong|Solid|Average|Weak>",
+  "strength": "<specific 1-sentence strength>",
+  "weakness": "<specific 1-sentence gap>",
+  "suggestion": "<concrete, actionable 1-sentence tip>",
+  "star_feedback": "<1 sentence STAR feedback if behavioral/situational, else ''>",
+  "tone_signals": ["<3 signals from: Confident, Structured, Vague, Concise, Detailed, Nervous, Passionate, Hesitant, Analytical, Creative, Experienced, Rambling, Thoughtful, Unprepared, Authentic, Polished>"],
+  "needs_followup": <true|false>,
+  "followup_question": "<natural follow-up if score below {mode_cfg['followup_threshold']+0.5}, else ''>",
+  "interviewer_reaction": "<1 short conversational reaction from {persona['name']} in first person>",
+  "ideal_hint": "<1-2 sentences: what a strong answer would have included>"
+}}
+"""
+    try:
+        raw = llm.invoke(prompt).content.strip()
+        if raw.startswith("```"): raw = re.sub(r"```(?:json)?","",raw).strip().rstrip("```").strip()
+        r = json.loads(raw)
+        r["score"]            = min(10.0, max(0.0, float(r.get("score", 5))))
+        r["competency_score"] = min(10.0, max(0.0, float(r.get("competency_score", r["score"]))))
+        return r
+    except Exception:
+        return {
+            "score":5.0,"competency_score":5.0,"verdict":"Average",
+            "strength":"Answer provided.","weakness":"Could not fully evaluate.",
+            "suggestion":"Use the STAR method with a specific, measurable example.",
+            "star_feedback":"","tone_signals":["Thoughtful"],"needs_followup":False,
+            "followup_question":"","interviewer_reaction":"Thanks for sharing that.",
+            "ideal_hint":"Include a specific example with a measurable outcome.",
+        }
+
+# ─────────────────────────────────────────────────────────────
+# AI SUMMARY
+# ─────────────────────────────────────────────────────────────
+def gen_summary(feedback_list, role, name, avg_score, persona_name, mode, llm) -> str:
     persona = PERSONAS.get(persona_name, PERSONAS["Ketu"])
     qa_pairs = "\n\n".join([
-        f"Q{i+1} [{item.get('type','?')} · {item.get('competency','?')}]: {item['q']}\nAnswer: {item['a'][:300]}…\nScore: {item['eval']['score']}/10 — {item['eval']['verdict']}"
+        f"Q{i+1} [{item.get('type','?')} · {item.get('competency','?')}]: {item['q']}\n"
+        f"Answer: {item['a'][:280]}…\nScore: {item['eval']['score']}/10 — {item['eval']['verdict']}"
         for i, item in enumerate(feedback_list)
     ])
     prompt = f"""You are {persona['name']}, a {persona['style']} AI interviewer writing a post-interview report.
-Candidate: {candidate_name or 'the candidate'} | Role: {role} | Mode: {mode} | Overall: {avg_score:.1f}/10
+Candidate: {name or 'the candidate'} | Role: {role} | Mode: {mode} | Overall: {avg_score:.1f}/10
 
 INTERVIEW DATA:
 {qa_pairs}
 
-Write a structured post-interview assessment with exactly these 4 sections:
+Write a structured assessment with exactly these 4 sections (use these exact headers):
 
 **OVERALL IMPRESSION**
-2-3 sentences on general performance, calibre, and fit.
+2-3 sentences on general performance, calibre, and role fit.
 
 **KEY STRENGTHS**
-2-3 sentences on the most impressive demonstrations across the interview.
+2-3 sentences on standout demonstrations. Reference specific answers.
 
 **DEVELOPMENT AREAS**
-2-3 sentences on specific gaps, with concrete references to answers.
+2-3 sentences on gaps with concrete references.
 
 **HIRING RECOMMENDATION**
-1-2 sentences: clear recommendation (Strong Hire / Hire / Hold / No Hire) with brief rationale.
+1-2 sentences with a clear call: Strong Hire / Hire / Hold / No Hire. Justify briefly.
 
-Use flowing prose, no bullet points. Professional but human. Be specific — reference actual answers.
-Write as {persona['name']}, in first person.
+Prose only. No bullets. Professional but human. Write as {persona['name']}, first person.
 """
-    response = llm.invoke(prompt)
-    return response.content.strip()
+    return llm.invoke(prompt).content.strip()
 
-# ============================================================
-# EXPORT HELPERS
-# ============================================================
-def build_json_export(state: dict) -> str:
-    export = {
-        "session_metadata": {
-            "candidate": state.get("candidate_name", "Anonymous"),
-            "role": state.get("role_title", ""),
-            "mode": state.get("interview_mode", "Standard"),
-            "persona": state.get("persona", "Ketu"),
+# ─────────────────────────────────────────────────────────────
+# EXPORT
+# ─────────────────────────────────────────────────────────────
+def build_json(state) -> str:
+    sc_list = state.get("scores", [])
+    avg = sum(s.get("score",0) for s in sc_list) / max(len(sc_list), 1)
+    return json.dumps({
+        "meta": {
+            "candidate": state.get("candidate_name","Anonymous"),
+            "role": state.get("role_title",""),
+            "mode": state.get("interview_mode","Standard"),
+            "persona": state.get("persona","Ketu"),
             "date": datetime.now().isoformat(),
+            "version": "2.0",
         },
-        "summary_score": round(
-            sum(s.get("score", 0) for s in state.get("scores", [])) / max(len(state.get("scores", [])), 1), 2
-        ),
-        "grade": grade_letter(
-            sum(s.get("score", 0) for s in state.get("scores", [])) / max(len(state.get("scores", [])), 1)
-        ),
+        "summary": {"avg_score": round(avg,2), "grade": grade_letter(avg), "total_questions": len(sc_list)},
+        "resume_profile": state.get("resume_profile"),
         "qa_transcript": [
             {
-                "question_num": i + 1,
-                "question": item["q"],
-                "type": item.get("type", ""),
-                "competency": item.get("competency", ""),
-                "difficulty": item.get("difficulty", ""),
-                "answer": item["a"],
-                "score": item["eval"].get("score", 0),
-                "verdict": item["eval"].get("verdict", ""),
-                "strength": item["eval"].get("strength", ""),
-                "weakness": item["eval"].get("weakness", ""),
-                "suggestion": item["eval"].get("suggestion", ""),
-                "tone_signals": item["eval"].get("tone_signals", []),
-                "time_seconds": item.get("time", 0),
+                "num": i+1, "question": item["q"], "type": item.get("type",""), "competency": item.get("competency",""),
+                "difficulty": item.get("difficulty",""), "answer": item["a"],
+                "score": item["eval"].get("score",0), "verdict": item["eval"].get("verdict",""),
+                "strength": item["eval"].get("strength",""), "weakness": item["eval"].get("weakness",""),
+                "suggestion": item["eval"].get("suggestion",""), "tone": item["eval"].get("tone_signals",[]),
+                "time_sec": item.get("time",0), "word_count": item.get("qa",{}).get("wc",0),
+                "filler_words": item.get("qa",{}).get("filler_count",0),
+                "star_score": item.get("qa",{}).get("star_score",0),
             }
-            for i, item in enumerate(state.get("feedback_list", []))
+            for i, item in enumerate(state.get("feedback_list",[]))
         ],
-        "competency_scores": state.get("competency_scores", {}),
-        "ai_assessment": state.get("ai_summary", ""),
-    }
-    return json.dumps(export, indent=2)
+        "competency_scores": {k: round(sum(v)/len(v),2) for k,v in state.get("competency_scores",{}).items() if v},
+        "communication_stats": {
+            "total_words": sum(state.get("word_counts",[])),
+            "avg_words_per_answer": sum(state.get("word_counts",[]))//max(len(state.get("word_counts",[])),1),
+            "total_filler_words": sum(state.get("filler_counts",[])),
+        },
+        "ai_assessment": state.get("ai_summary",""),
+    }, indent=2)
 
-# ============================================================
+def build_csv(state) -> str:
+    rows = []
+    for i, item in enumerate(state.get("feedback_list",[])):
+        rows.append({
+            "Q#": i+1, "Question": item["q"], "Type": item.get("type",""), "Competency": item.get("competency",""),
+            "Difficulty": item.get("difficulty",""), "Answer": item["a"][:200]+"…",
+            "Score": item["eval"].get("score",0), "Verdict": item["eval"].get("verdict",""),
+            "Strength": item["eval"].get("strength",""), "Gap": item["eval"].get("weakness",""),
+            "Suggestion": item["eval"].get("suggestion",""), "Words": item.get("qa",{}).get("wc",0),
+            "Fillers": item.get("qa",{}).get("filler_count",0), "STAR Score": item.get("qa",{}).get("star_score",0),
+        })
+    return pd.DataFrame(rows).to_csv(index=False)
+
+# ─────────────────────────────────────────────────────────────
 # HELPERS
-# ============================================================
-def score_class(score: float) -> str:
-    return "score-high" if score >= 7 else "score-mid" if score >= 5 else "score-low"
-
-def grade_letter(avg: float) -> str:
-    if avg >= 8.5: return "A+"
-    if avg >= 7.5: return "A"
-    if avg >= 6.5: return "B+"
-    if avg >= 5.5: return "B"
-    if avg >= 4.5: return "C"
+# ─────────────────────────────────────────────────────────────
+def score_color(s): return "#00c896" if s>=7 else "#fbbf24" if s>=5 else "#fb2c36"
+def grade_letter(avg):
+    if avg>=8.5: return "A+"
+    if avg>=7.5: return "A"
+    if avg>=6.5: return "B+"
+    if avg>=5.5: return "B"
+    if avg>=4.5: return "C"
     return "D"
+def grade_css(g):
+    if g.startswith("A"): return "grade-A"
+    if g.startswith("B"): return "grade-B"
+    if g.startswith("C"): return "grade-C"
+    return "grade-D"
+def grade_tagline(g): return {
+    "A+":"Outstanding — a rare calibre of candidate.",
+    "A":"Excellent performance — strong hire signal.",
+    "B+":"Very good — above expectations in most areas.",
+    "B":"Solid candidate with clear strengths.",
+    "C":"Adequate but notable gaps remain.",
+    "D":"Significant development needed.",
+}.get(g,"Interview complete.")
 
-def grade_class(g: str) -> str:
-    if g.startswith("A"): return "result-grade-A"
-    if g.startswith("B"): return "result-grade-B"
-    if g.startswith("C"): return "result-grade-C"
-    return "result-grade-D"
-
-def grade_tagline(g: str) -> str:
-    return {
-        "A+": "Outstanding — a rare calibre of candidate.",
-        "A":  "Excellent performance — strong hire signal.",
-        "B+": "Very good — above expectations in most areas.",
-        "B":  "Solid candidate with clear strengths.",
-        "C":  "Adequate but notable gaps remain.",
-        "D":  "Significant development needed.",
-    }.get(g, "Interview complete.")
-
-PLOTLY_LAYOUT = dict(
+PLOTLY = dict(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Cabinet Grotesk, sans-serif", color="#8899bb"),
-    xaxis=dict(gridcolor="#111e30", zerolinecolor="#111e30"),
-    yaxis=dict(gridcolor="#111e30", zerolinecolor="#111e30"),
-    margin=dict(t=36, b=36, l=16, r=16),
+    font=dict(family="Geist Mono, monospace", color="#3d5580"),
+    xaxis=dict(gridcolor="#0e1a2e", zerolinecolor="#0e1a2e"),
+    yaxis=dict(gridcolor="#0e1a2e", zerolinecolor="#0e1a2e"),
+    margin=dict(t=30, b=30, l=12, r=12),
 )
 
-# ============================================================
+# ─────────────────────────────────────────────────────────────
+# CAMERA PANEL (enhanced)
+# ─────────────────────────────────────────────────────────────
+def camera_panel():
+    import streamlit.components.v1 as components
+    components.html("""
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{background:transparent;font-family:'Geist Mono',monospace}
+      #wrap{background:#060c18;border:1px solid #14253e;border-radius:12px;overflow:hidden}
+      #top{display:flex;align-items:center;justify-content:space-between;padding:0.45rem 0.8rem;background:rgba(0,0,0,0.5);border-bottom:1px solid #0e1a2e}
+      .rdot{width:6px;height:6px;border-radius:50%;background:#fb2c36;animation:blink 1s infinite;display:inline-block;margin-right:5px}
+      @keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
+      #lbl{font-size:10px;color:#fb2c36;letter-spacing:0.12em}
+      #bdg{font-size:10px;letter-spacing:0.06em;padding:2px 7px;border-radius:99px;background:rgba(0,212,255,0.08);color:rgba(0,212,255,0.6);border:1px solid rgba(0,212,255,0.18)}
+      #vw{position:relative;background:#02040a}
+      video{width:100%;display:block;transform:scaleX(-1)}
+      #ov{position:absolute;inset:0;pointer-events:none}
+      #fr{position:absolute;top:50%;left:50%;transform:translate(-50%,-55%);width:80px;height:96px;border:1.5px solid rgba(0,212,255,0.2);border-radius:50%}
+      .c{position:absolute;width:12px;height:12px}
+      #c1{top:6px;left:6px;border-top:1.5px solid rgba(0,212,255,0.4);border-left:1.5px solid rgba(0,212,255,0.4)}
+      #c2{top:6px;right:6px;border-top:1.5px solid rgba(0,212,255,0.4);border-right:1.5px solid rgba(0,212,255,0.4)}
+      #c3{bottom:6px;left:6px;border-bottom:1.5px solid rgba(0,212,255,0.4);border-left:1.5px solid rgba(0,212,255,0.4)}
+      #c4{bottom:6px;right:6px;border-bottom:1.5px solid rgba(0,212,255,0.4);border-right:1.5px solid rgba(0,212,255,0.4)}
+      #scan{position:absolute;left:0;right:0;height:1px;background:rgba(0,212,255,0.15);animation:scan 3.5s linear infinite}
+      @keyframes scan{0%{top:0}100%{top:100%}}
+      #bot{display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.8rem;background:rgba(0,0,0,0.5);border-top:1px solid #0e1a2e}
+      #tip{font-size:10px;color:rgba(124,58,237,0.6);flex:1;text-align:right}
+      #nocam{display:none;padding:2rem 1rem;text-align:center;font-size:11px;color:rgba(0,212,255,0.3);line-height:2}
+      canvas{display:none}
+    </style>
+    <div id="wrap">
+      <div id="top"><div><span class="rdot"></span><span id="lbl">LIVE</span></div><span id="bdg">Initialising…</span></div>
+      <div id="vw">
+        <video id="vid" autoplay playsinline muted></video>
+        <div id="ov"><div id="fr"></div><div class="c" id="c1"></div><div class="c" id="c2"></div><div class="c" id="c3"></div><div class="c" id="c4"></div><div id="scan"></div></div>
+        <div id="nocam">📷<br>Camera not available</div>
+      </div>
+      <div id="bot"><span id="tip">Maintain eye contact</span></div>
+    </div>
+    <canvas id="cv"></canvas>
+    <script>
+      const vid=document.getElementById('vid'),badge=document.getElementById('bdg'),tip=document.getElementById('tip'),nocam=document.getElementById('nocam');
+      const BADGES=['Eye contact: good','Posture: upright','Expression: engaged','Composure: steady','Presence: confident','Focus: on-point'];
+      const TIPS=['Maintain steady eye contact','Sit upright — posture signals confidence','Breathe steadily before answering','Nod to show active listening','Smile naturally — warmth matters'];
+      let bi=0,ti=0;
+      navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:320},height:{ideal:240}},audio:false})
+        .then(s=>{vid.srcObject=s;nocam.style.display='none';badge.textContent=BADGES[0];setInterval(()=>badge.textContent=BADGES[bi++%BADGES.length],4000);setInterval(()=>tip.textContent=TIPS[ti++%TIPS.length],5000);})
+        .catch(()=>{vid.style.display='none';nocam.style.display='block';badge.textContent='Unavailable';});
+    </script>
+    """, height=280, scrolling=False)
+
+# ─────────────────────────────────────────────────────────────
+# SIDEBAR
+# ─────────────────────────────────────────────────────────────
+def render_sidebar():
+    with st.sidebar:
+        st.markdown('<div style="font-family:Geist,sans-serif;font-weight:900;font-size:1.7rem;color:#00d4ff;margin-bottom:0.1rem;letter-spacing:-0.04em">KETU AI <span style="font-size:0.7rem;color:#3d5580;letter-spacing:0.2em;font-weight:400">v2.0</span></div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-family:Geist Mono,monospace;font-size:0.62rem;color:#1e3258;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:1rem">Elite Interview Intelligence</div>', unsafe_allow_html=True)
+        st.markdown("---")
+
+        screen = st.session_state.get("screen","setup")
+        persona = PERSONAS.get(st.session_state.get("persona","Ketu"), PERSONAS["Ketu"])
+
+        if screen == "interview":
+            idx = st.session_state.current
+            n   = len(st.session_state.questions)
+            st.progress(idx / max(n,1))
+            c1, c2 = st.columns(2)
+            c1.metric("Question", f"{idx}/{n}")
+            if st.session_state.scores:
+                avg = sum(s.get("score",0) for s in st.session_state.scores) / len(st.session_state.scores)
+                c2.metric("Grade", grade_letter(avg))
+            st.markdown(f'<div style="font-family:Geist Mono,monospace;font-size:0.72rem;color:#3d5580;margin:0.5rem 0">Interviewer: {persona["avatar"]} {persona["name"]}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="font-family:Geist Mono,monospace;font-size:0.72rem;color:#3d5580;margin-bottom:0.8rem">Mode: {st.session_state.interview_mode}</div>', unsafe_allow_html=True)
+            st.markdown("---")
+            if st.button("⏹ End Interview", use_container_width=True):
+                st.session_state.screen = "results"; st.rerun()
+            st.session_state.camera_enabled = st.toggle("📷 Camera Monitor", value=st.session_state.get("camera_enabled",False))
+            if st.session_state.camera_enabled:
+                camera_panel()
+
+        elif screen == "results":
+            if st.session_state.scores:
+                avg = sum(s.get("score",0) for s in st.session_state.scores)/len(st.session_state.scores)
+                st.success(f"Interview complete · {grade_letter(avg)}")
+                st.metric("Final Score", f"{avg:.1f}/10")
+                st.markdown("---")
+                if st.button("🔄 New Interview", use_container_width=True):
+                    for k in list(st.session_state.keys()): del st.session_state[k]
+                    st.rerun()
+
+        st.markdown("---")
+        st.markdown('<div style="font-family:Geist Mono,monospace;font-size:0.62rem;color:#1e3258;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:0.5rem">Capabilities</div>', unsafe_allow_html=True)
+        for f in [
+            "4 interviewer personas","8 competency frameworks","3 pressure modes",
+            "Resume deep analysis","Skills gap detection","Adaptive follow-ups",
+            "Live STAR tracking","Filler word analysis","Real-time coaching",
+            "Specificity scoring","Competency radar","Score timeline",
+            "CSV + JSON export","Whisper voice input","TTS delivery",
+        ]:
+            st.markdown(f'<div style="font-family:Geist Mono,monospace;font-size:0.65rem;color:#1e3258;padding:0.15rem 0">· {f}</div>', unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.caption(datetime.now().strftime("%H:%M · %d %b %Y"))
+
+# ─────────────────────────────────────────────────────────────
 # SCREEN — SETUP
-# ============================================================
+# ─────────────────────────────────────────────────────────────
 def screen_setup():
+    # Hero
     st.markdown("""
-    <div class="hero-wrap">
-        <div class="hero-eyebrow">⚡ Adaptive · Multi-Persona · Real-Time Intelligence</div>
-        <div class="hero-title">KETU AI</div>
-        <span class="hero-title-accent">next-generation interview intelligence</span>
-        <p class="hero-sub">Meet your elite AI interviewer. Adaptive follow-ups, STAR analysis, competency mapping, and feedback that actually makes you better.</p>
-        <div class="hero-stats">
-            <div><div class="hero-stat-num">3</div><div class="hero-stat-label">Interviewer Personas</div></div>
-            <div><div class="hero-stat-num">15+</div><div class="hero-stat-label">Competencies Tracked</div></div>
-            <div><div class="hero-stat-num">∞</div><div class="hero-stat-label">Adaptive Follow-ups</div></div>
+    <div class="hero">
+        <div style="display:flex;justify-content:center;margin-bottom:2rem">
+            <div class="hero-kicker"><div class="hero-dot"></div>Adaptive · Multi-Persona · Real-Time Intelligence</div>
+        </div>
+        <div class="hero-wordmark">KETU AI</div>
+        <div class="hero-sub-title">next-generation interview intelligence</div>
+        <p class="hero-desc">Meet your elite AI interviewer. Adaptive follow-ups, resume analysis, STAR tracking, competency mapping, and feedback that genuinely makes you better.</p>
+        <div class="hero-badges">
+            <span class="hero-badge">4 Personas</span>
+            <span class="hero-badge">8 Competency Frameworks</span>
+            <span class="hero-badge">Live STAR Tracking</span>
+            <span class="hero-badge">Resume Intelligence</span>
+            <span class="hero-badge">Voice Input</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1181,84 +1362,122 @@ def screen_setup():
     left, right = st.columns([1.1, 0.9], gap="large")
 
     with left:
-        # Persona selector
-        st.markdown('<div class="panel panel-glow-cyan">', unsafe_allow_html=True)
-        st.markdown('<div class="sec-label">🎭 Choose Your Interviewer</div>', unsafe_allow_html=True)
+        # ── Persona selector ──
+        st.markdown('<div class="glass glass-electric">', unsafe_allow_html=True)
+        st.markdown('<div class="sec sec-electric">🎭 Choose Your Interviewer</div>', unsafe_allow_html=True)
+        p_cols = st.columns(4)
+        for i, (pn, pd_) in enumerate(PERSONAS.items()):
+            with p_cols[i]:
+                active = st.session_state.persona == pn
+                st.markdown(f"""<div class="persona-card {"active" if active else ""}">
+                    <div class="persona-emoji">{pd_['avatar']}</div>
+                    <div class="persona-name">{pn}</div>
+                    <div class="persona-role">{pd_['title']}</div>
+                </div>""", unsafe_allow_html=True)
+                if st.button("✓ Active" if active else "Select", key=f"p_{pn}", use_container_width=True):
+                    st.session_state.persona = pn; st.rerun()
 
-        persona_cols = st.columns(3)
-        for i, (p_name, p_data) in enumerate(PERSONAS.items()):
-            with persona_cols[i]:
-                is_active = st.session_state.persona == p_name
-                border_color = "rgba(0,229,255,0.5)" if is_active else "var(--border)"
-                bg = "rgba(0,229,255,0.05)" if is_active else "var(--surface2)"
-                st.markdown(f"""
-                <div style="background:{bg};border:1px solid {border_color};border-radius:12px;padding:1rem;text-align:center;margin-bottom:0.5rem">
-                    <div style="font-size:1.8rem;margin-bottom:0.4rem">{p_data['avatar']}</div>
-                    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;color:var(--text)">{p_name}</div>
-                    <div style="font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text3);margin-top:0.2rem">{p_data['title']}</div>
-                </div>
-                """, unsafe_allow_html=True)
-                if st.button(f"{'✓ Selected' if is_active else 'Select'}", key=f"persona_{p_name}", use_container_width=True):
-                    st.session_state.persona = p_name
-                    st.rerun()
-
-        st.markdown("---")
-        st.markdown('<div class="sec-label">📋 Job Context</div>', unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown('<div class="sec">📋 Job Details</div>', unsafe_allow_html=True)
         st.session_state.candidate_name = st.text_input("Your Name (optional)", placeholder="e.g. Arjun Mehta", value=st.session_state.candidate_name)
         st.session_state.role_title = st.text_input("Role / Job Title *", placeholder="e.g. Senior Backend Engineer", value=st.session_state.role_title)
 
-        col_a, col_b = st.columns(2)
-        with col_a:
-            category = st.selectbox("Role Category", list(COMPETENCY_FRAMEWORKS.keys()), index=list(COMPETENCY_FRAMEWORKS.keys()).index(st.session_state.category_tag))
-            st.session_state.category_tag = category
-        with col_b:
+        c1, c2 = st.columns(2)
+        with c1:
+            cat = st.selectbox("Role Category", list(COMPETENCY_FRAMEWORKS.keys()), index=list(COMPETENCY_FRAMEWORKS.keys()).index(st.session_state.category_tag))
+            st.session_state.category_tag = cat
+        with c2:
             mode = st.selectbox("Interview Mode", list(INTERVIEW_MODES.keys()), index=list(INTERVIEW_MODES.keys()).index(st.session_state.interview_mode))
             st.session_state.interview_mode = mode
 
         mode_info = INTERVIEW_MODES[mode]
-        st.markdown(f'<div class="tip-box">{mode_info["emoji"]} <b>{mode}</b>: {mode_info["desc"]}  ·  Follow-up threshold: ≥{mode_info["followup_threshold"]}/10</div>', unsafe_allow_html=True)
+        st.markdown(f"""<div class="mode-grid" style="margin-top:0.5rem;margin-bottom:1rem">
+            {''.join([
+                f'<div class="mode-card {"m-"+m.lower() if st.session_state.interview_mode==m else ""}"><div class="mode-title">{INTERVIEW_MODES[m]["emoji"]} {m}</div><div class="mode-desc">{INTERVIEW_MODES[m]["desc"]}</div><span class="mode-pill {INTERVIEW_MODES[m]["pill_cls"]}">{INTERVIEW_MODES[m]["pressure"].upper()} PRESSURE</span></div>'
+                for m in INTERVIEW_MODES
+            ])}
+        </div>""", unsafe_allow_html=True)
 
-        st.session_state.jd_text = st.text_area("Job Description *", height=260, placeholder="Paste the full job description here…", value=st.session_state.jd_text)
+        st.session_state.jd_text = st.text_area("Job Description *", height=250, placeholder="Paste the full job description here…", value=st.session_state.jd_text)
+
+        st.markdown('<div class="sec" style="margin-top:1rem">⚙️ Settings</div>', unsafe_allow_html=True)
+        c3, c4, c5 = st.columns(3)
+        with c3: st.session_state.num_questions = st.slider("Questions", 4, 15, st.session_state.num_questions)
+        with c4: st.session_state.tts_enabled = st.toggle("🔊 Voice TTS", value=st.session_state.tts_enabled)
+        with c5: st.session_state.show_hints  = st.toggle("💡 Show Hints", value=st.session_state.show_hints)
+
+        # Competency preview
+        comps = COMPETENCY_FRAMEWORKS.get(cat, [])
+        comp_html = "".join([f'<span class="skill-tag sk-neutral">{c}</span>' for c in comps])
+        st.markdown(f'<div class="sec" style="margin-top:0.8rem">📊 Competencies to Assess</div><div class="skills-match">{comp_html}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with right:
-        st.markdown('<div class="panel panel-glow-violet">', unsafe_allow_html=True)
-        st.markdown('<div class="sec-label">📄 Your Resume</div>', unsafe_allow_html=True)
+        st.markdown('<div class="glass glass-neon">', unsafe_allow_html=True)
+        st.markdown('<div class="sec sec-neon">📄 Resume Upload & Analysis</div>', unsafe_allow_html=True)
+
         resume_file = st.file_uploader("Upload Resume (PDF, DOCX, TXT)", type=["pdf","docx","doc","txt"], label_visibility="collapsed")
         if resume_file:
-            with st.spinner("Reading resume…"):
-                st.session_state.resume_text = load_document(resume_file)
-            words = len(st.session_state.resume_text.split())
-            st.success(f"✅ Resume loaded — {words:,} words extracted")
-            with st.expander("Preview extracted text"):
-                st.text(st.session_state.resume_text[:800] + "…")
+            with st.spinner("🔍 Reading & analysing resume…"):
+                text = load_doc(resume_file)
+                st.session_state.resume_text = text
+                if st.session_state.jd_text.strip():
+                    profile = analyze_resume(text, st.session_state.jd_text, st.session_state.role_title or "this role", llm)
+                    st.session_state.resume_profile = profile
+                    if profile.get("candidate_name") and profile["candidate_name"] != "Candidate":
+                        if not st.session_state.candidate_name:
+                            st.session_state.candidate_name = profile["candidate_name"]
 
-        st.markdown("---")
-        st.markdown('<div class="sec-label">⚙️ Session Settings</div>', unsafe_allow_html=True)
+            # Profile card
+            profile = st.session_state.resume_profile or {}
+            match_html = "".join([f'<span class="skill-tag sk-match">✓ {s}</span>' for s in profile.get("matching_skills",[])[:4]])
+            gap_html   = "".join([f'<span class="skill-tag sk-gap">✗ {s}</span>' for s in profile.get("gap_skills",[])[:3]])
+            skill_html = "".join([f'<span class="skill-tag sk-neutral">{s}</span>' for s in profile.get("top_skills",[])[:5]])
+            fit_score  = profile.get("overall_fit_score", 0)
+            fit_color  = score_color(fit_score)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.session_state.num_questions = st.slider("Questions", 4, 15, st.session_state.num_questions)
-        with col2:
-            st.session_state.tts_enabled = st.toggle("🔊 Voice TTS", value=st.session_state.tts_enabled)
+            st.markdown(f"""
+            <div class="resume-profile" style="margin-top:1rem">
+                <div class="rp-name">{profile.get('candidate_name','Candidate')}</div>
+                <div class="rp-role">{profile.get('current_role','Professional')} · {profile.get('years_experience','N/A')} · {profile.get('education','N/A')}</div>
+                <div style="margin-top:0.6rem;font-family:'Geist Mono',monospace;font-size:0.65rem;color:var(--t3)">
+                    Companies: {' · '.join(profile.get('companies',[])[:3]) or 'N/A'}
+                </div>
+                <div class="rp-chips" style="margin-top:0.8rem">{skill_html}</div>
+                {f'<div style="margin-top:0.6rem">{match_html}{gap_html}</div>' if match_html or gap_html else ''}
+                <div class="rp-stats">
+                    <div><div class="rp-stat-num" style="color:{fit_color}">{fit_score:.1f}/10</div><div class="rp-stat-lbl">Role Fit</div></div>
+                    <div><div class="rp-stat-num">{len(profile.get('matching_skills',[]))}</div><div class="rp-stat-lbl">Skill Matches</div></div>
+                    <div><div class="rp-stat-num">{len(profile.get('gap_skills',[]))}</div><div class="rp-stat-lbl">Skill Gaps</div></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-        # Competency preview
-        if st.session_state.category_tag:
-            comps = COMPETENCY_FRAMEWORKS.get(st.session_state.category_tag, [])
-            comp_html = "".join([f'<span class="competency-pill">{c}</span>' for c in comps])
-            st.markdown(f'<div class="sec-label" style="margin-top:1rem">📊 Competencies to Assess</div>', unsafe_allow_html=True)
-            st.markdown(f'<div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-bottom:1rem">{comp_html}</div>', unsafe_allow_html=True)
+            if profile.get("fit_rationale"):
+                st.markdown(f'<div class="tip neon" style="margin-top:0.7rem">🎯 {profile["fit_rationale"]}</div>', unsafe_allow_html=True)
 
-        st.markdown("""
-        <div class="tip-box">
-        🧠 KETU AI tracks STAR method usage, filler word density, answer verbosity, and competency scores across all your answers — giving you data no human interviewer would share.
-        </div>
-        """, unsafe_allow_html=True)
+            with st.expander("📋 Full resume text"):
+                st.text(text[:900] + "…")
+        else:
+            st.markdown("""
+            <div class="upload-zone">
+                <div class="upload-icon">📄</div>
+                <div class="upload-title">Drop your resume here</div>
+                <div class="upload-hint">PDF · DOCX · TXT · Auto-analysed against JD</div>
+            </div>
+            """, unsafe_allow_html=True)
+
         st.markdown('</div>', unsafe_allow_html=True)
 
+        st.markdown("""
+        <div class="tip" style="margin-top:0.8rem">
+        🧠 KETU AI v2 deep-analyses your resume against the JD before generating questions — identifying skill matches, gaps, and crafting targeted probes that no human interviewer could prepare as fast.
+        </div>
+        """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
+
         persona = PERSONAS.get(st.session_state.persona, PERSONAS["Ketu"])
-        if st.button(f"🚀  Begin Interview with {persona['name']}", use_container_width=True):
+        if st.button(f"⚡  Begin Interview with {persona['name']}", use_container_width=True):
             if not st.session_state.jd_text.strip():
                 st.error("Please paste a job description.")
             elif not st.session_state.resume_text.strip():
@@ -1267,387 +1486,203 @@ def screen_setup():
                 st.error("Please enter the role / job title.")
             else:
                 with st.spinner(f"🤖 {persona['name']} is reviewing your profile and crafting tailored questions…"):
-                    qs, types, comps_list, diffs = generate_questions(
-                        st.session_state.jd_text,
-                        st.session_state.resume_text,
-                        st.session_state.role_title,
-                        st.session_state.num_questions,
-                        llm,
-                        st.session_state.persona,
-                        st.session_state.interview_mode,
-                        st.session_state.category_tag,
+                    qs, ts, cs, dfs = gen_questions(
+                        st.session_state.jd_text, st.session_state.resume_text,
+                        st.session_state.role_title, st.session_state.num_questions,
+                        llm, st.session_state.persona, st.session_state.interview_mode,
+                        st.session_state.category_tag, st.session_state.get("resume_profile"),
                     )
                 if not qs:
                     st.error("Could not generate questions. Check your API key.")
-                else:
-                    greeting = random.choice(persona["greetings"])
-                    st.session_state.questions         = qs
-                    st.session_state.q_types           = types
-                    st.session_state.q_competencies    = comps_list
-                    st.session_state.q_difficulties    = diffs
-                    st.session_state.current           = 0
-                    st.session_state.scores            = []
-                    st.session_state.feedback_list     = []
-                    st.session_state.time_per_q        = []
-                    st.session_state.session_start     = time.time()
-                    st.session_state.q_start           = time.time()
-                    st.session_state.submitted         = False
-                    st.session_state.Ketu_message      = greeting
-                    st.session_state.is_followup       = False
-                    st.session_state.followup_count    = 0
-                    st.session_state.transcript        = []
-                    st.session_state.competency_scores = {}
-                    st.session_state.filler_word_counts= []
-                    st.session_state.word_counts       = []
-                    st.session_state.star_analyses     = []
-                    st.session_state.ai_summary        = None
-                    st.session_state.screen            = "interview"
-                    st.rerun()
-def camera_panel():
-    import streamlit.components.v1 as components
-    components.html("""
-    <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { background: transparent; font-family: 'Cabinet Grotesk', sans-serif; }
-      #wrap {
-        background: #050b12; border: 1px solid #111e30;
-        border-radius: 16px; overflow: hidden; position: relative;
-      }
-      #topbar {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 0.5rem 0.9rem;
-        background: rgba(0,0,0,0.4);
-        border-bottom: 1px solid #111e30;
-      }
-      .rec-dot { width: 7px; height: 7px; border-radius: 50%; background: #f43f5e;
-        animation: blink 1s ease infinite; display: inline-block; margin-right: 6px; }
-      @keyframes blink { 0%,100%{opacity:1}50%{opacity:0.2} }
-      #label { font-size: 11px; color: #f43f5e; letter-spacing: 0.12em; font-family: monospace; }
-      #hint-badge {
-        font-size: 11px; font-family: monospace; letter-spacing: 0.06em;
-        padding: 2px 8px; border-radius: 99px;
-        background: rgba(0,229,255,0.08); color: rgba(0,229,255,0.6);
-        border: 1px solid rgba(0,229,255,0.18);
-      }
-      #video-wrap { position: relative; width: 100%; background: #010306; }
-      video { width: 100%; display: block; transform: scaleX(-1); }
-      #overlay {
-        position: absolute; inset: 0; pointer-events: none;
-      }
-      #face-ring {
-        position: absolute; top: 50%; left: 50%;
-        transform: translate(-50%, -55%);
-        width: 90px; height: 110px;
-        border: 1.5px solid rgba(0,229,255,0.25); border-radius: 50%;
-      }
-      #corner-tl, #corner-tr, #corner-bl, #corner-br {
-        position: absolute; width: 14px; height: 14px;
-      }
-      #corner-tl { top: 8px; left: 8px; border-top: 1.5px solid rgba(0,229,255,0.45); border-left: 1.5px solid rgba(0,229,255,0.45); }
-      #corner-tr { top: 8px; right: 8px; border-top: 1.5px solid rgba(0,229,255,0.45); border-right: 1.5px solid rgba(0,229,255,0.45); }
-      #corner-bl { bottom: 8px; left: 8px; border-bottom: 1.5px solid rgba(0,229,255,0.45); border-left: 1.5px solid rgba(0,229,255,0.45); }
-      #corner-br { bottom: 8px; right: 8px; border-bottom: 1.5px solid rgba(0,229,255,0.45); border-right: 1.5px solid rgba(0,229,255,0.45); }
-      #scan-line {
-        position: absolute; left: 0; right: 0; height: 1px;
-        background: rgba(0,229,255,0.18);
-        animation: scan 3.5s linear infinite;
-      }
-      @keyframes scan { 0%{top:0%} 100%{top:100%} }
-      #botbar {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 0.55rem 0.9rem; background: rgba(0,0,0,0.5);
-        border-top: 1px solid #111e30; gap: 8px;
-      }
-      #snap-btn {
-        background: transparent; border: 1px solid rgba(0,229,255,0.3);
-        color: rgba(0,229,255,0.7); border-radius: 8px; font-size: 11px;
-        font-family: monospace; padding: 4px 12px; cursor: pointer;
-        letter-spacing: 0.08em; transition: all 0.2s;
-      }
-      #snap-btn:hover { background: rgba(0,229,255,0.07); border-color: rgba(0,229,255,0.6); color: #00e5ff; }
-      #tip-text { font-size: 11px; font-family: monospace; color: rgba(139,92,246,0.6); flex: 1; text-align: right; }
-      #no-cam {
-        display: none; padding: 2.5rem 1rem; text-align: center;
-        font-size: 12px; color: rgba(0,229,255,0.35); font-family: monospace;
-        letter-spacing: 0.08em; line-height: 2;
-      }
-      #snapshot-strip { display: none; padding: 0.5rem; background: rgba(0,0,0,0.3); }
-      #snapshot-strip img { width: 56px; height: 42px; object-fit: cover;
-        border-radius: 4px; border: 1px solid #182840; margin-right: 4px;
-        display: inline-block; }
-      #canvas { display: none; }
-    </style>
+                    return
+                greeting = random.choice(persona["greetings"])
+                for k in ["questions","q_types","q_competencies","q_difficulties","scores","feedback_list",
+                          "transcript","competency_scores","filler_counts","word_counts","ai_summary"]:
+                    st.session_state[k] = [] if k != "competency_scores" and k != "ai_summary" else ({} if k=="competency_scores" else None)
+                st.session_state.questions        = qs
+                st.session_state.q_types          = ts
+                st.session_state.q_competencies   = cs
+                st.session_state.q_difficulties   = dfs
+                st.session_state.current          = 0
+                st.session_state.session_start    = time.time()
+                st.session_state.q_start          = time.time()
+                st.session_state.submitted        = False
+                st.session_state.ketu_message     = greeting
+                st.session_state.is_followup      = False
+                st.session_state.followup_count   = 0
+                st.session_state.screen           = "interview"
+                st.rerun()
 
-    <div id="wrap">
-      <div id="topbar">
-        <div><span class="rec-dot"></span><span id="label">LIVE · CAMERA ON</span></div>
-        <span id="hint-badge" id="badge">Initialising…</span>
-      </div>
-      <div id="video-wrap">
-        <video id="vid" autoplay playsinline muted></video>
-        <div id="overlay">
-          <div id="face-ring"></div>
-          <div id="corner-tl"></div><div id="corner-tr"></div>
-          <div id="corner-bl"></div><div id="corner-br"></div>
-          <div id="scan-line"></div>
-        </div>
-        <div id="no-cam">📷<br>Camera access denied<br>or not available.</div>
-      </div>
-      <div id="botbar">
-        <button id="snap-btn">⊙ Snapshot</button>
-        <span id="tip-text">Maintain eye contact · Sit upright</span>
-      </div>
-      <div id="snapshot-strip"></div>
-    </div>
-    <canvas id="canvas"></canvas>
-
-    <script>
-      const vid = document.getElementById('vid');
-      const badge = document.getElementById('hint-badge');
-      const tipText = document.getElementById('tip-text');
-      const noCAM = document.getElementById('no-cam');
-      const snapBtn = document.getElementById('snap-btn');
-      const strip = document.getElementById('snapshot-strip');
-      const canvas = document.getElementById('canvas');
-
-      const TIPS = [
-        "Maintain steady eye contact",
-        "Sit upright — good posture signals confidence",
-        "Speak to the camera, not the screen",
-        "Nod occasionally to show active listening",
-        "Keep a neutral, engaged expression",
-        "Breathe steadily before answering",
-        "Avoid excessive hand gestures near face",
-        "Smile naturally — warmth matters",
-      ];
-      const BADGES = [
-        "Analysing posture…",
-        "Eye contact: good",
-        "Posture: upright",
-        "Expression: engaged",
-        "Presence: confident",
-        "Focus: on-point",
-        "Composure: steady",
-        "Energy: positive",
-      ];
-
-      let tipIdx = 0, badgeIdx = 0;
-
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }, audio: false })
-        .then(stream => {
-          vid.srcObject = stream;
-          vid.style.display = 'block';
-          noCAM.style.display = 'none';
-          badge.textContent = BADGES[0];
-          setInterval(() => { badge.textContent = BADGES[badgeIdx++ % BADGES.length]; }, 4200);
-          setInterval(() => { tipText.textContent = TIPS[tipIdx++ % TIPS.length]; }, 5500);
-        })
-        .catch(() => {
-          vid.style.display = 'none';
-          noCAM.style.display = 'block';
-          badge.textContent = 'Camera unavailable';
-        });
-
-      snapBtn.addEventListener('click', () => {
-        if (!vid.srcObject) return;
-        canvas.width = vid.videoWidth || 320;
-        canvas.height = vid.videoHeight || 240;
-        const ctx = canvas.getContext('2d');
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(vid, 0, 0);
-        const img = document.createElement('img');
-        img.src = canvas.toDataURL('image/jpeg', 0.7);
-        img.title = new Date().toLocaleTimeString();
-        strip.style.display = 'block';
-        strip.insertBefore(img, strip.firstChild);
-        if (strip.querySelectorAll('img').length > 5)
-          strip.removeChild(strip.lastChild);
-        snapBtn.textContent = '✓ Saved';
-        setTimeout(() => snapBtn.textContent = '⊙ Snapshot', 1500);
-      });
-    </script>
-    """, height=330, scrolling=False)
-# ============================================================
+# ─────────────────────────────────────────────────────────────
 # SCREEN — INTERVIEW
-# ============================================================
+# ─────────────────────────────────────────────────────────────
 def screen_interview():
-    llm = get_llm()
-    idx  = st.session_state.current
-    questions    = st.session_state.questions
-    q_types      = st.session_state.q_types
-    q_comps      = st.session_state.q_competencies
-    q_diffs      = st.session_state.q_difficulties
-    persona      = PERSONAS.get(st.session_state.persona, PERSONAS["Ketu"])
-    mode         = st.session_state.interview_mode
-    mode_cfg     = INTERVIEW_MODES.get(mode, INTERVIEW_MODES["Standard"])
-    n = len(questions)
+    llm        = get_llm()
+    idx        = st.session_state.current
+    questions  = st.session_state.questions
+    q_types    = st.session_state.q_types
+    q_comps    = st.session_state.q_competencies
+    q_diffs    = st.session_state.q_difficulties
+    persona    = PERSONAS.get(st.session_state.persona, PERSONAS["Ketu"])
+    mode       = st.session_state.interview_mode
+    mode_cfg   = INTERVIEW_MODES.get(mode, INTERVIEW_MODES["Standard"])
+    n          = len(questions)
 
     if idx >= n:
-        st.session_state.screen = "results"
-        st.rerun()
+        st.session_state.screen = "results"; st.rerun()
 
     q          = questions[idx]
-    q_type     = q_types[idx]     if idx < len(q_types)  else "technical"
-    competency = q_comps[idx]     if idx < len(q_comps)  else "Technical Depth"
-    difficulty = q_diffs[idx]     if idx < len(q_diffs)  else "medium"
-    q_info     = QUESTION_TYPES.get(q_type, ("❓", "badge-technical", q_type.title()))
-    diff_color = {"easy": "var(--emerald)", "medium": "var(--amber)", "hard": "var(--rose)"}.get(difficulty, "var(--text3)")
-    diff_icon  = {"easy": "▸", "medium": "▸▸", "hard": "▸▸▸"}.get(difficulty, "▸▸")
+    q_type     = q_types[idx]  if idx < len(q_types) else "technical"
+    competency = q_comps[idx]  if idx < len(q_comps) else "Technical Depth"
+    difficulty = q_diffs[idx]  if idx < len(q_diffs) else "medium"
+    q_info     = QUESTION_TYPES.get(q_type, ("❓","qb-tech",q_type.title()))
+    diff_cls   = {"easy":"diff-e","medium":"diff-m","hard":"diff-h"}.get(difficulty,"diff-m")
 
-    # ── Top bar ──────────────────────────────────────────────
-    tb1, tb2, tb3, tb4, tb5 = st.columns([4, 1, 1, 1, 1])
+    # ── Top progress bar ──────────────────────────────────────
+    elapsed = int(time.time() - (st.session_state.session_start or time.time()))
+    mins, secs = divmod(elapsed, 60)
+    avg_so_far = (sum(s.get("score",0) for s in st.session_state.scores) / len(st.session_state.scores)) if st.session_state.scores else 0.0
+
+    tb1, tb2, tb3, tb4, tb5, tb6 = st.columns([4,1,1,1,1,1])
     with tb1:
         st.progress(idx / n)
-        elapsed = int(time.time() - st.session_state.session_start) if st.session_state.session_start else 0
-        mins, secs = divmod(elapsed, 60)
-        st.caption(f"Q{idx+1}/{n}  ·  {mins:02d}:{secs:02d}  ·  {mode} mode  ·  {persona['name']}")
-    with tb2:
-        avg = (sum(s.get("score",0) for s in st.session_state.scores) / len(st.session_state.scores)) if st.session_state.scores else 0.0
-        st.metric("Avg", f"{avg:.1f}")
-    with tb3:
-        st.metric("Done", f"{len(st.session_state.scores)}/{n}")
-    with tb4:
-        total_words = sum(st.session_state.word_counts) if st.session_state.word_counts else 0
-        st.metric("Words", f"{total_words}")
+        st.caption(f"Q{idx+1} / {n}  ·  {mins:02d}:{secs:02d}  ·  {mode} mode  ·  {persona['name']}")
+    with tb2: st.metric("Avg", f"{avg_so_far:.1f}")
+    with tb3: st.metric("Done", f"{len(st.session_state.scores)}/{n}")
+    with tb4: st.metric("Words", f"{sum(st.session_state.word_counts)}")
     with tb5:
-        if st.button("⏹", help="End interview"):
-            st.session_state.screen = "results"
-            st.rerun()
+        fc = sum(st.session_state.filler_counts)
+        st.metric("Fillers", f"{fc}")
+    with tb6:
+        if st.button("⏹ End", help="End interview"): st.session_state.screen = "results"; st.rerun()
 
     st.markdown("---")
 
-    # Camera monitor panel
-    if st.session_state.get("camera_enabled", False):
-        with st.sidebar:
-            st.markdown("---")
-            st.markdown('<div style="font-family:\'DM Mono\',monospace;font-size:0.65rem;color:#2d4464;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.5rem">📷 Camera Monitor</div>', unsafe_allow_html=True)
-            camera_panel()
-    # ── Persona avatar ───────────────────────────────────────
-    Ketu_msg = st.session_state.get("Ketu_message", "")
+    # ── Persona avatar ────────────────────────────────────────
+    msg = st.session_state.get("ketu_message","")
     is_followup = st.session_state.get("is_followup", False)
-    speaking_class = "speaking" if Ketu_msg and not st.session_state.submitted else ""
+    speaking = "speaking" if msg and not st.session_state.submitted else ""
 
     st.markdown(f"""
-    <div class="interviewer-wrap">
-        <div class="avatar-ring {speaking_class}">{persona['avatar']}</div>
-        <div class="interviewer-meta">
-            <div class="interviewer-name">{persona['name']}</div>
-            <div class="interviewer-status"><span class="status-dot"></span> {persona['title']}</div>
+    <div class="avatar-bar">
+        <div class="avatar-icon {speaking}">{persona['avatar']}</div>
+        <div class="avatar-meta">
+            <div class="avatar-name">{persona['name']}</div>
+            <div class="avatar-status"><span class="status-led"></span>{persona['title']}</div>
         </div>
-        <div class="interviewer-speech"><span class="speech-quote">"</span>{Ketu_msg or 'Ready for your answer…'}<span class="speech-quote">"</span></div>
+        <div class="avatar-speech"><span class="speech-open">"</span>{msg or "Ready for your answer…"}<span class="speech-close">"</span></div>
     </div>
     """, unsafe_allow_html=True)
 
-    if Ketu_msg and f"tts_done_{idx}_{Ketu_msg[:20]}" not in st.session_state:
-        tts_autoplay(Ketu_msg)
-        st.session_state[f"tts_done_{idx}_{Ketu_msg[:20]}"] = True
+    tts_key = f"tts_{idx}_{hash(msg)}"
+    if msg and tts_key not in st.session_state:
+        tts_play(msg); st.session_state[tts_key] = True
 
     # ── Question card ─────────────────────────────────────────
     if is_followup:
-        st.markdown('<div class="followup-badge">🔄 Follow-up — Ketu wants to dig deeper</div>', unsafe_allow_html=True)
+        st.markdown('<div class="followup-strip">🔄 Follow-up — Probing deeper</div>', unsafe_allow_html=True)
 
     st.markdown(f"""
     <div class="q-card">
-        <div class="q-num">Question {idx+1} of {n}</div>
+        <div class="q-counter">Question {idx+1} of {n}</div>
         <p class="q-text">{q}</p>
         <div class="q-meta">
-            <span class="q-type-badge {q_info[1]}">{q_info[0]} {q_info[2]}</span>
-            <span class="q-competency">📊 {competency}</span>
-            <span style="font-family:'DM Mono',monospace;font-size:0.62rem;color:{diff_color}">{diff_icon} {difficulty.upper()}</span>
+            <span class="q-badge {q_info[1]}">{q_info[0]} {q_info[2]}</span>
+            <span class="q-comp-tag">📊 {competency}</span>
+            <span class="q-diff {diff_cls}">{difficulty.upper()}</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Answer area ───────────────────────────────────────────
+    # ── Answer input ──────────────────────────────────────────
     if not st.session_state.submitted:
-        # Voice recording
+        # Voice
         if HAS_AUDIO_RECORDER:
-            st.markdown('<div class="sec-label">🎙️ Voice Answer</div>', unsafe_allow_html=True)
-            st.markdown('<div class="rec-strip"><span class="rec-label"><span class="rec-dot"></span> Click to record · Powered by Groq Whisper</span><span style="font-family:\'DM Mono\',monospace;font-size:0.68rem;color:var(--text3)">Speak clearly for best accuracy</span></div>', unsafe_allow_html=True)
+            st.markdown('<div class="sec">🎙️ Voice Answer</div>', unsafe_allow_html=True)
+            st.markdown('<div class="rec-strip"><div class="rec-left"><span class="rec-dot"></span>Click to record · Groq Whisper</div><span style="font-family:\'Geist Mono\',monospace;font-size:0.65rem;color:var(--t4)">Speak clearly</span></div>', unsafe_allow_html=True)
             audio_bytes = audio_recorder(text="", icon_size="2x", key=f"rec_{idx}")
-            if audio_bytes and f"transcribed_{idx}" not in st.session_state:
-                st.markdown(build_waveform(), unsafe_allow_html=True)
+            if audio_bytes and f"tr_{idx}" not in st.session_state:
+                st.markdown(waveform_html(), unsafe_allow_html=True)
                 with st.spinner("Transcribing…"):
-                    text = transcribe_voice(audio_bytes)
+                    text = transcribe(audio_bytes)
                     if text:
-                        st.session_state[f"answer_{idx}"] = text
-                        st.session_state[f"transcribed_{idx}"] = True
+                        st.session_state[f"ans_{idx}"] = text
+                        st.session_state[f"tr_{idx}"] = True
                         st.rerun()
 
-        st.markdown('<div class="sec-label">✍️ Written Answer</div>', unsafe_allow_html=True)
-        if f"transcribed_{idx}" in st.session_state:
-            st.info(f"🎙️ Transcribed: *{st.session_state.get(f'answer_{idx}', '')}*")
+        st.markdown('<div class="sec">✍️ Written Answer</div>', unsafe_allow_html=True)
+        if f"tr_{idx}" in st.session_state:
+            st.info(f"🎙️ Transcribed: *{st.session_state.get(f'ans_{idx}','')}*")
 
         ans = st.text_area(
             "Your response",
-            value=st.session_state.get(f"answer_{idx}", ""),
-            key=f"input_{idx}",
-            height=180,
-            placeholder="Type your answer here, or use voice recording above…",
+            value=st.session_state.get(f"ans_{idx}",""),
+            key=f"in_{idx}", height=175,
+            placeholder="Type your answer here, or use the voice recorder above…",
             label_visibility="collapsed",
         )
 
-        # Live coaching analysis
+        # ── Live coaching ──
         if ans.strip():
-            qa = analyze_answer_quality(ans)
-            hint_type, hint_icon, hint_text = qa["coaching_hint"]
-            wc = qa["word_count"]
-            # Word meter
-            ideal_pct = min(wc / 250, 1.0)
-            meter_color = "#10b981" if 80 <= wc <= 250 else "#f59e0b" if wc < 80 else "#f43f5e"
+            qa = analyze_quality(ans)
+            wc = qa["wc"]
+            pct = min(wc/250, 1.0)
+            mc  = score_color(wc/25) if 80<=wc<=250 else "#fbbf24" if wc<80 else "#fb2c36"
+            status = "Ideal ✓" if 80<=wc<=250 else "Too short" if wc<80 else "Too long"
+
             st.markdown(f"""
             <div class="word-meter">
-                <span class="word-meter-label">{wc} words</span>
-                <div class="word-meter-bar"><div class="word-meter-fill" style="width:{ideal_pct*100:.0f}%;background:{meter_color}"></div></div>
-                <span class="word-meter-label" style="color:{meter_color}">{'Ideal ✓' if 80<=wc<=250 else 'Too short' if wc<80 else 'Too long'}</span>
-            </div>
-            <div class="coaching-bar {hint_type}"><span class="coaching-icon">{hint_icon}</span>{hint_text}</div>
-            """, unsafe_allow_html=True)
+                <span class="wm-count">{wc} words</span>
+                <div class="wm-track"><div class="wm-fill" style="width:{pct*100:.0f}%;background:{mc}"></div></div>
+                <span class="wm-status" style="color:{mc}">{status}</span>
+            </div>""", unsafe_allow_html=True)
 
-            # STAR quick indicator for behavioral
-            if q_type in ("behavioral", "situational") and wc > 30:
-                star = qa["star_signals"]
-                star_html = "".join([
-                    f'<div class="star-cell"><div class="star-cell-label">{k}</div><div class="star-cell-value {"star-found" if v else "star-missing"}">'
-                    f'{"✓" if v else "○"}</div></div>'
+            htype, hicon, htext = qa["hint"]
+            hint_cls = {"warn":"coach-warn","success":"coach-success","info":"coach-info"}.get(htype,"coach-info")
+            st.markdown(f'<div class="coach-bar {hint_cls}"><span class="coach-icon">{hicon}</span>{htext}</div>', unsafe_allow_html=True)
+
+            # STAR check
+            if q_type in ("behavioral","situational") and wc > 30:
+                star = qa["star"]
+                star_cells = "".join([
+                    f'<div class="star-cell {"active" if v else ""}"><div class="star-label">{k}</div><div class="star-val {"star-y" if v else "star-n"}">{"✓" if v else "○"}</div></div>'
                     for k, v in star.items()
                 ])
-                st.markdown(f'<div style="margin-top:0.6rem"><div class="sec-label" style="margin-bottom:0.4rem">⭐ STAR Check</div><div class="star-grid">{star_html}</div></div>', unsafe_allow_html=True)
-        else:
-            tip_map = {
-                "technical":   "💡 Be specific — mention tools, architectures, and measurable outcomes.",
-                "behavioral":  "💡 Use the STAR method: Situation · Task · Action · Result.",
-                "rapport":     "💡 Be authentic — this is about knowing you, not testing you.",
-                "situational": "💡 Walk through your thinking step-by-step. Trade-offs matter.",
-                "ambition":    "💡 Connect your goals directly to what excites you about this role.",
+                st.markdown(f'<div style="margin-top:0.6rem"><div class="sec" style="margin-bottom:0.35rem">⭐ STAR Coverage</div><div class="star-grid">{star_cells}</div></div>', unsafe_allow_html=True)
+
+            # Specificity signal
+            if qa["specificity"] >= 2:
+                st.markdown(f'<div class="coach-bar coach-success"><span class="coach-icon">📊</span>Good use of specific details and numbers — that strengthens credibility.</div>', unsafe_allow_html=True)
+
+        elif st.session_state.show_hints:
+            tips = {
+                "technical":  "⚙️ Mention specific tools, architectures, and measurable outcomes.",
+                "behavioral": "🧠 Use the STAR method: Situation · Task · Action · Result.",
+                "rapport":    "💬 Be authentic — this question is about knowing you, not testing you.",
+                "situational":"🎯 Walk through your thinking step-by-step. Trade-offs matter.",
+                "ambition":   "🚀 Connect your goals directly to what excites you about this role.",
             }
-            st.markdown(f'<div class="tip-box">{tip_map.get(q_type, "💡 Take your time and be specific.")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="tip">{tips.get(q_type,"💡 Take your time and be specific.")}</div>', unsafe_allow_html=True)
 
-        col1, col2, col3 = st.columns([3, 1, 1])
-        with col1:
-            submit = st.button("✓  Submit Answer", use_container_width=True)
-        with col2:
-            skip = st.button("Skip →", use_container_width=True)
-        with col3:
-            if st.button("💡 Hint", use_container_width=True, help="See a coaching tip for this question"):
-                st.session_state[f"show_hint_{idx}"] = not st.session_state.get(f"show_hint_{idx}", False)
-                st.rerun()
+        c1, c2, c3 = st.columns([3,1,1])
+        with c1: submit = st.button("✓  Submit Answer", use_container_width=True)
+        with c2: skip   = st.button("Skip →",           use_container_width=True)
+        with c3: hint   = st.button("💡 Hint",           use_container_width=True)
 
-        if st.session_state.get(f"show_hint_{idx}", False):
-            st.markdown(f"""
-            <div class="coaching-bar good">
-                <span class="coaching-icon">🎯</span>
-                For a <b>{q_type}</b> question on <b>{competency}</b>, focus on: specifics over generalities, quantified outcomes, and what YOU personally did vs what the team did.
-            </div>
-            """, unsafe_allow_html=True)
+        if hint:
+            st.markdown(f"""<div class="coach-bar coach-info">
+                <span class="coach-icon">🎯</span>
+                For a <b>{q_type}</b> question on <b>{competency}</b>: focus on specifics over generalities,
+                quantified outcomes, and what YOU personally did vs what the team did.
+                {"For behavioral: use STAR — describe the Situation, your Task, specific Actions, and Results." if q_type in ("behavioral","situational") else ""}
+            </div>""", unsafe_allow_html=True)
 
         if skip:
-            st.session_state.transcript.append({"role": "user", "content": "[Skipped]", "q": q})
+            st.session_state.transcript.append({"role":"user","content":"[Skipped]","q":q})
             st.session_state.current   += 1
             st.session_state.submitted  = False
             st.session_state.is_followup = False
-            st.session_state.Ketu_message = random.choice(persona["transitions"])
+            st.session_state.ketu_message = random.choice(persona["transitions"])
             st.session_state.q_start = time.time()
             st.rerun()
 
@@ -1655,174 +1690,154 @@ def screen_interview():
             if not ans.strip():
                 st.warning("Please provide an answer before submitting.")
             else:
-                # Pre-compute quality analysis
-                qa = analyze_answer_quality(ans)
-                st.session_state.filler_word_counts.append(qa["filler_count"])
-                st.session_state.word_counts.append(qa["word_count"])
+                qa = analyze_quality(ans)
+                st.session_state.filler_counts.append(qa["filler_count"])
+                st.session_state.word_counts.append(qa["wc"])
 
-                with st.spinner(f"{persona['name']} is analysing your response…"):
-                    eval_res = evaluate_answer(
-                        q, ans, st.session_state.role_title, q_type, competency, mode,
-                        st.session_state.persona, llm,
-                        st.session_state.transcript[-6:]
-                    )
-                    eval_res["_qa_analysis"] = qa  # attach local analysis
+                with st.spinner(random.choice(persona["thinking"])):
+                    ev = evaluate(q, ans, st.session_state.role_title, q_type, competency,
+                                  mode, st.session_state.persona, llm, st.session_state.transcript[-6:])
+                    ev["_qa"] = qa
 
-                st.session_state.transcript.append({"role": "user",  "content": ans, "q": q})
-                st.session_state.transcript.append({"role": persona["name"], "content": eval_res.get("Ketu_reaction", "")})
+                st.session_state.transcript.append({"role":"user","content":ans,"q":q})
+                st.session_state.transcript.append({"role":persona["name"],"content":ev.get("interviewer_reaction","")})
 
                 if not is_followup:
-                    st.session_state.scores.append(eval_res)
+                    st.session_state.scores.append(ev)
                     st.session_state.feedback_list.append({
-                        "q": q, "a": ans, "eval": eval_res,
-                        "type": q_type, "competency": competency, "difficulty": difficulty,
-                        "time": int(time.time() - (st.session_state.q_start or time.time())),
-                        "qa": qa,
+                        "q":q,"a":ans,"eval":ev,"type":q_type,"competency":competency,
+                        "difficulty":difficulty,"time":int(time.time()-(st.session_state.q_start or time.time())),
+                        "qa":qa,
                     })
-                    # Update competency scores
-                    comp_sc = eval_res.get("competency_score", eval_res.get("score", 5.0))
+                    csc = ev.get("competency_score", ev.get("score",5.0))
                     if competency not in st.session_state.competency_scores:
                         st.session_state.competency_scores[competency] = []
-                    st.session_state.competency_scores[competency].append(comp_sc)
+                    st.session_state.competency_scores[competency].append(csc)
                 else:
                     if st.session_state.scores:
-                        prev = st.session_state.scores[-1]
-                        new_sc = min(10.0, (prev["score"] + eval_res["score"]) / 2 + 0.5)
-                        st.session_state.scores[-1]["score"] = new_sc
+                        prev = st.session_state.scores[-1]["score"]
+                        st.session_state.scores[-1]["score"] = min(10.0, (prev + ev["score"])/2 + 0.5)
 
-                st.session_state.current_feedback = eval_res
+                st.session_state.current_feedback = ev
                 st.session_state.submitted = True
-                needs_followup = (
-                    eval_res.get("needs_followup", False)
-                    and eval_res.get("followup_question", "")
-                    and st.session_state.followup_count < mode_cfg["max_followups"]
-                    and not is_followup
+                st.session_state._pending_followup = (
+                    ev.get("needs_followup",False) and ev.get("followup_question","")
+                    and st.session_state.followup_count < mode_cfg["max_followups"] and not is_followup
                 )
-                st.session_state._pending_followup = needs_followup
                 st.rerun()
 
     # ── Feedback view ─────────────────────────────────────────
     else:
         f = st.session_state.current_feedback
-        sc = f.get("score", 5.0)
-        sc_class = score_class(sc)
-        tones = f.get("tone_signals", [])
-        Ketu_react = f.get("Ketu_reaction", "")
-        qa_local = f.get("_qa_analysis", {})
+        sc = f.get("score",5.0)
+        sc_cls = "fb-ring-num score-" + ("high" if sc>=7 else "mid" if sc>=5 else "low")
+        sc_color = score_color(sc)
+        reaction = f.get("interviewer_reaction","")
+        qa_local = f.get("_qa",{})
+        tones = f.get("tone_signals",[])
 
         # Persona reaction
-        if Ketu_react:
+        if reaction:
             st.markdown(f"""
-            <div class="interviewer-wrap">
-                <div class="avatar-ring">{persona['avatar']}</div>
-                <div class="interviewer-meta">
-                    <div class="interviewer-name">{persona['name']}</div>
-                    <div class="interviewer-status"><span class="status-dot"></span> Reviewing your answer</div>
+            <div class="avatar-bar">
+                <div class="avatar-icon">{persona['avatar']}</div>
+                <div class="avatar-meta">
+                    <div class="avatar-name">{persona['name']}</div>
+                    <div class="avatar-status"><span class="status-led busy"></span>Reviewing</div>
                 </div>
-                <div class="interviewer-speech"><span class="speech-quote">"</span>{Ketu_react}<span class="speech-quote">"</span></div>
+                <div class="avatar-speech"><span class="speech-open">"</span>{reaction}<span class="speech-close">"</span></div>
             </div>
             """, unsafe_allow_html=True)
-            if f"tts_react_{idx}" not in st.session_state:
-                tts_autoplay(Ketu_react)
-                st.session_state[f"tts_react_{idx}"] = True
+            react_key = f"tr_{idx}_{hash(reaction)}"
+            if react_key not in st.session_state:
+                tts_play(reaction); st.session_state[react_key] = True
 
-        # Score ring + verdict
-        tone_chips_html = ""
+        # Score + tones
+        tone_html = ""
         for t in tones:
-            cls = "positive" if t in POSITIVE_TONE_SIGNALS else "negative" if t in NEGATIVE_TONE_SIGNALS else ""
-            tone_chips_html += f'<span class="tone-chip {cls}">{t}</span>'
+            cls = "tc-pos" if t in POSITIVE_TONE else "tc-neg" if t in NEGATIVE_TONE else "tc-neu"
+            tone_html += f'<span class="tone-chip {cls}">{t}</span>'
 
-        ring_svg = score_ring_svg(sc)
+        ring = ring_svg(sc)
         st.markdown(f"""
-        <div class="feedback-card">
-            <div class="score-display">
-                <div class="score-ring-wrap">
-                    {ring_svg}
-                    <div class="score-ring-num {sc_class}">{sc:.1f}</div>
+        <div class="fb-card">
+            <div class="fb-score-row">
+                <div class="fb-ring-wrap">
+                    {ring}
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Geist',sans-serif;font-size:1.4rem;font-weight:800;color:{sc_color}">{sc:.1f}</div>
                 </div>
                 <div>
-                    <div class="verdict-text">{f.get('verdict','Average')}</div>
-                    <div class="verdict-sub">{competency} · out of 10</div>
-                    <div class="tone-chips">{tone_chips_html}</div>
+                    <div class="fb-verdict">{f.get('verdict','Average')}</div>
+                    <div class="fb-sub">{competency} · /10</div>
+                    <div class="tone-chips">{tone_html}</div>
                 </div>
             </div>
-            <div class="feedback-section">
-                <div class="feedback-label label-strength">✓ Strength</div>
-                <div class="feedback-text">{f.get('strength','—')}</div>
-            </div>
-            <div class="feedback-section">
-                <div class="feedback-label label-weakness">✗ Gap</div>
-                <div class="feedback-text">{f.get('weakness','—')}</div>
-            </div>
-            <div class="feedback-section">
-                <div class="feedback-label label-suggestion">→ Suggestion</div>
-                <div class="feedback-text">{f.get('suggestion','—')}</div>
-            </div>
-            {f'<div class="feedback-section"><div class="feedback-label label-star">⭐ STAR Analysis</div><div class="feedback-text">{f.get("star_feedback","")}</div></div>' if f.get('star_feedback') and q_type in ('behavioral','situational') else ''}
+            <div class="fb-sec"><div class="fb-lbl fb-lbl-str">✓ Strength</div><div class="fb-text">{f.get('strength','—')}</div></div>
+            <div class="fb-sec"><div class="fb-lbl fb-lbl-gap">✗ Gap</div><div class="fb-text">{f.get('weakness','—')}</div></div>
+            <div class="fb-sec"><div class="fb-lbl fb-lbl-sug">→ Suggestion</div><div class="fb-text">{f.get('suggestion','—')}</div></div>
+            {f'<div class="fb-sec"><div class="fb-lbl" style="color:rgba(0,200,150,0.65)">⭐ STAR Analysis</div><div class="fb-text">{f.get("star_feedback","")}</div></div>' if f.get("star_feedback") and q_type in ("behavioral","situational") else ''}
         </div>
         """, unsafe_allow_html=True)
 
-        # Show ideal answer hint
-        ideal = f.get("ideal_answer_hint", "")
+        # Ideal hint
+        ideal = f.get("ideal_hint","")
         if ideal:
             with st.expander("💡 What a strong answer would have included"):
-                st.markdown(f'<div class="tip-box" style="color:rgba(139,92,246,0.65);border-color:rgba(139,92,246,0.15)">{ideal}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="tip neon">{ideal}</div>', unsafe_allow_html=True)
 
-        # Show local quality stats
+        # Stats row
         if qa_local:
-            wc = qa_local.get("word_count", 0)
-            fc = qa_local.get("filler_count", 0)
-            star_score = qa_local.get("star_score", 0)
-            cols = st.columns(3)
-            cols[0].metric("Words", f"{wc}")
-            cols[1].metric("Filler Words", f"{fc}")
-            cols[2].metric("STAR Coverage", f"{star_score}/4")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Words",   f'{qa_local.get("wc",0)}')
+            c2.metric("Fillers", f'{qa_local.get("filler_count",0)}')
+            c3.metric("STAR",    f'{qa_local.get("star_score",0)}/4')
+            c4.metric("Specificity", f'{qa_local.get("specificity",0)}/3')
 
-        # Follow-up logic
-        pending_followup = st.session_state.get("_pending_followup", False)
-        fq = f.get("followup_question", "")
-        if pending_followup and fq:
-            st.markdown(f'<div class="tip-box" style="color:rgba(244,63,94,0.6);border-color:rgba(244,63,94,0.15)">🔍 {persona["name"]} wants to explore this further…</div>', unsafe_allow_html=True)
-            c1, c2 = st.columns(2)
-            with c1:
-                if st.button("🔄  Answer Follow-up", use_container_width=True):
-                    st.session_state.questions.insert(idx + 1, fq)
-                    st.session_state.q_types.insert(idx + 1, q_type)
-                    st.session_state.q_competencies.insert(idx + 1, competency)
-                    st.session_state.q_difficulties.insert(idx + 1, "hard")
-                    st.session_state.current     += 1
-                    st.session_state.submitted    = False
-                    st.session_state.is_followup  = True
+        # Follow-up
+        pending = st.session_state.get("_pending_followup", False)
+        fq      = f.get("followup_question","")
+        if pending and fq:
+            st.markdown(f'<div class="tip" style="color:rgba(251,100,100,0.65);border-color:rgba(251,44,54,0.2);margin-top:0.5rem">🔍 {persona["name"]} wants to explore this further…</div>', unsafe_allow_html=True)
+            fc1, fc2 = st.columns(2)
+            with fc1:
+                if st.button("🔄 Answer Follow-up", use_container_width=True):
+                    st.session_state.questions.insert(idx+1, fq)
+                    st.session_state.q_types.insert(idx+1, q_type)
+                    st.session_state.q_competencies.insert(idx+1, competency)
+                    st.session_state.q_difficulties.insert(idx+1, "hard")
+                    st.session_state.current      += 1
+                    st.session_state.submitted     = False
+                    st.session_state.is_followup   = True
                     st.session_state.followup_count += 1
                     st.session_state._pending_followup = False
-                    st.session_state.Ketu_message = f"Good. Let me push on this. {fq}"
+                    st.session_state.ketu_message  = f"Good. Let me push on this: {fq}"
                     st.session_state.q_start = time.time()
                     st.rerun()
-            with c2:
+            with fc2:
                 if st.button("Skip Follow-up →", use_container_width=True):
-                    st.session_state.current    += 1
-                    st.session_state.submitted   = False
+                    st.session_state.current   += 1
+                    st.session_state.submitted  = False
                     st.session_state.is_followup = False
                     st.session_state._pending_followup = False
-                    st.session_state.Ketu_message = random.choice(persona["transitions"])
+                    st.session_state.ketu_message = random.choice(persona["transitions"])
                     st.session_state.q_start = time.time()
                     st.rerun()
         else:
-            next_label = "Finish Interview →" if idx + 1 >= n else f"Next Question → Q{idx+2}"
-            if st.button(next_label, use_container_width=True):
-                st.session_state.current     += 1
-                st.session_state.submitted    = False
-                st.session_state.is_followup  = False
+            label = "Finish Interview →" if idx+1 >= len(questions) else f"Next Question → Q{idx+2}"
+            if st.button(label, use_container_width=True):
+                st.session_state.current   += 1
+                st.session_state.submitted  = False
+                st.session_state.is_followup = False
                 st.session_state._pending_followup = False
-                st.session_state.Ketu_message = random.choice(persona["transitions"])
+                st.session_state.ketu_message = random.choice(persona["transitions"])
                 st.session_state.q_start = time.time()
                 st.rerun()
 
-# ============================================================
-# SCREEN — RESULTS
-# ============================================================
+# ─────────────────────────────────────────────────────────────
+# SCREEN — RESULTS (tabbed)
+# ─────────────────────────────────────────────────────────────
 def screen_results():
-    llm = get_llm()
+    llm           = get_llm()
     scores        = st.session_state.scores
     feedback_list = st.session_state.feedback_list
     persona       = PERSONAS.get(st.session_state.persona, PERSONAS["Ketu"])
@@ -1830,349 +1845,342 @@ def screen_results():
     if not scores:
         st.warning("No answers were recorded.")
         if st.button("Start Over"):
-            for k in list(st.session_state.keys()):
-                del st.session_state[k]
+            for k in list(st.session_state.keys()): del st.session_state[k]
             st.rerun()
         return
 
-    avg_score = sum(s.get("score",0) for s in scores) / len(scores)
-    grade     = grade_letter(avg_score)
-    g_class   = grade_class(grade)
-    tagline   = grade_tagline(grade)
-    name      = st.session_state.candidate_name or "Candidate"
-    role      = st.session_state.role_title
-    elapsed   = int(time.time() - (st.session_state.session_start or time.time()))
-    mins      = elapsed // 60
-    n_total   = len(st.session_state.questions)
-    mode      = st.session_state.interview_mode
-
+    avg     = sum(s.get("score",0) for s in scores) / len(scores)
+    grade   = grade_letter(avg)
+    g_cls   = grade_css(grade)
+    tagline = grade_tagline(grade)
+    name    = st.session_state.candidate_name or "Candidate"
+    role    = st.session_state.role_title
+    elapsed = int(time.time() - (st.session_state.session_start or time.time()))
+    mins    = elapsed // 60
+    n_total = len(st.session_state.questions)
+    mode    = st.session_state.interview_mode
     total_words   = sum(st.session_state.word_counts) if st.session_state.word_counts else 0
-    total_fillers = sum(st.session_state.filler_word_counts) if st.session_state.filler_word_counts else 0
+    total_fillers = sum(st.session_state.filler_counts) if st.session_state.filler_counts else 0
     avg_words     = total_words // max(len(st.session_state.word_counts), 1)
-    star_scores   = [item.get("qa", {}).get("star_score", 0) for item in feedback_list if item.get("qa")]
-    avg_star      = sum(star_scores) / max(len(star_scores), 1)
+    star_scores   = [item.get("qa",{}).get("star_score",0) for item in feedback_list if item.get("qa")]
+    avg_star      = sum(star_scores) / max(len(star_scores),1)
+    filler_pct    = (total_fillers / max(total_words,1)) * 100
 
-    # ── Hero ─────────────────────────────────────────────────
+    # ── Hero ──────────────────────────────────────────────────
     st.markdown(f"""
     <div class="result-hero">
-        <div class="hero-eyebrow">Interview Complete · {name} · {role} · {mode} Mode · {persona['name']}</div>
-        <div class="result-grade {g_class}">{grade}</div>
-        <div class="result-label">Final Grade · {avg_score:.1f} / 10</div>
+        <div class="hero-kicker"><div class="hero-dot"></div>{name} · {role} · {mode} Mode · {persona['name']}</div>
+        <div class="result-grade {g_cls}">{grade}</div>
+        <div class="result-score-row">Final Score · {avg:.1f} / 10</div>
         <div class="result-tagline">{tagline}</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Metrics row ───────────────────────────────────────────
-    m1, m2, m3, m4, m5, m6 = st.columns(6)
-    m1.metric("Score", f"{avg_score:.1f}/10")
-    m2.metric("Answered", f"{len(scores)}/{n_total}")
-    m3.metric("Duration", f"{mins}m")
-    m4.metric("Avg Words", f"{avg_words}")
-    m5.metric("Filler Words", f"{total_fillers}")
-    m6.metric("STAR Avg", f"{avg_star:.1f}/4")
+    # ── Top metrics ───────────────────────────────────────────
+    m1,m2,m3,m4,m5,m6,m7 = st.columns(7)
+    m1.metric("Score",   f"{avg:.1f}/10")
+    m2.metric("Answered",f"{len(scores)}/{n_total}")
+    m3.metric("Duration",f"{mins}m")
+    m4.metric("Avg Words",f"{avg_words}")
+    m5.metric("Fillers", f"{total_fillers}")
+    m6.metric("STAR Avg",f"{avg_star:.1f}/4")
+    m7.metric("Filler %",f"{filler_pct:.1f}%")
 
     st.markdown("---")
 
-    left, right = st.columns([1.2, 0.8], gap="large")
+    # ── Tabs ──────────────────────────────────────────────────
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Analytics", "📋 Breakdown", "🤖 AI Assessment", "📄 Resume Profile", "⬇️ Export"])
 
-    with left:
-        # ── Score timeline ────────────────────────────────────
-        st.markdown('<div class="sec-label">📈 Score Timeline</div>', unsafe_allow_html=True)
-        if len(scores) >= 2:
-            vals     = [s.get("score",0) for s in scores]
-            q_labels = [f"Q{i+1}" for i in range(len(scores))]
-            fig_line = go.Figure()
-            # Fill area
-            fig_line.add_trace(go.Scatter(
-                x=q_labels, y=vals, mode="lines+markers",
-                line=dict(color="#00e5ff", width=2.5, shape="spline"),
-                marker=dict(size=10, color=vals,
-                    colorscale=[[0,"#f43f5e"],[0.5,"#f59e0b"],[1,"#10b981"]],
-                    line=dict(color="#010306", width=2.5), symbol="circle"),
-                fill="tozeroy", fillcolor="rgba(0,229,255,0.05)",
-                name="Score",
+    with tab1:
+        col_l, col_r = st.columns([1.2, 0.8], gap="large")
+        with col_l:
+            # Score timeline
+            if len(scores) >= 2:
+                st.markdown('<div class="sec">📈 Score Timeline</div>', unsafe_allow_html=True)
+                vals = [s.get("score",0) for s in scores]
+                ql   = [f"Q{i+1}" for i in range(len(scores))]
+                fig_line = go.Figure()
+                fig_line.add_trace(go.Scatter(
+                    x=ql, y=vals, mode="lines+markers",
+                    line=dict(color="#00d4ff", width=2.5, shape="spline"),
+                    marker=dict(size=10, color=vals, colorscale=[[0,"#fb2c36"],[0.5,"#fbbf24"],[1,"#00c896"]],
+                        line=dict(color="#02040a",width=2.5)),
+                    fill="tozeroy", fillcolor="rgba(0,212,255,0.04)",
+                ))
+                fig_line.add_hline(y=avg, line_dash="dot", line_color="rgba(0,212,255,0.35)",
+                    annotation_text=f"avg {avg:.1f}", annotation_font_color="#00d4ff", annotation_font_size=10)
+                fig_line.update_layout(**{**PLOTLY,"height":240,"showlegend":False,"yaxis":{**PLOTLY.get("yaxis",{}),"range":[0,10.5]}})
+                st.plotly_chart(fig_line, use_container_width=True, config={"displayModeBar":False})
+
+            # Word count bar
+            if st.session_state.word_counts and len(st.session_state.word_counts) >= 2:
+                st.markdown('<div class="sec">📝 Words per Answer</div>', unsafe_allow_html=True)
+                wc_v = st.session_state.word_counts
+                wc_l = [f"Q{i+1}" for i in range(len(wc_v))]
+                fig_wc = go.Figure(go.Bar(
+                    x=wc_l, y=wc_v,
+                    marker_color=["#00c896" if 80<=w<=250 else "#fbbf24" if w<80 else "#fb2c36" for w in wc_v],
+                    marker_line_width=0, text=wc_v, textposition="outside",
+                    textfont=dict(size=10, color="#3d5580"),
+                ))
+                fig_wc.add_hline(y=80,  line_dash="dot", line_color="rgba(0,200,150,0.3)", annotation_text="min", annotation_font_size=9, annotation_font_color="rgba(0,200,150,0.5)")
+                fig_wc.add_hline(y=250, line_dash="dot", line_color="rgba(251,44,54,0.3)",  annotation_text="max", annotation_font_size=9, annotation_font_color="rgba(251,44,54,0.5)")
+                fig_wc.update_layout(**PLOTLY, height=180, showlegend=False)
+                st.plotly_chart(fig_wc, use_container_width=True, config={"displayModeBar":False})
+
+            # Competency bar chart
+            comp_agg = {k: sum(v)/len(v) for k,v in st.session_state.competency_scores.items() if v}
+            if comp_agg:
+                st.markdown('<div class="sec">🏆 Competency Scores</div>', unsafe_allow_html=True)
+                sorted_comps = sorted(comp_agg.items(), key=lambda x: x[1])
+                fig_comp = go.Figure(go.Bar(
+                    x=[v for _,v in sorted_comps],
+                    y=[k for k,_ in sorted_comps],
+                    orientation="h",
+                    marker_color=["#00c896" if v>=7 else "#fbbf24" if v>=5 else "#fb2c36" for _,v in sorted_comps],
+                    marker_line_width=0,
+                    text=[f"{v:.1f}" for _,v in sorted_comps],
+                    textposition="outside",
+                    textfont=dict(size=10, color="#8a9fc4"),
+                ))
+                fig_comp.update_layout(**PLOTLY, height=max(180, len(sorted_comps)*36), showlegend=False, xaxis=dict(**PLOTLY.get("xaxis",{}), range=[0,11]))
+                st.plotly_chart(fig_comp, use_container_width=True, config={"displayModeBar":False})
+
+        with col_r:
+            # Competency radar
+            if len(comp_agg) >= 3:
+                st.markdown('<div class="sec">🕸️ Competency Radar</div>', unsafe_allow_html=True)
+                cats_r = list(comp_agg.keys()); vals_r = list(comp_agg.values())
+                fig_rad = go.Figure(go.Scatterpolar(
+                    r=vals_r+[vals_r[0]], theta=cats_r+[cats_r[0]],
+                    fill="toself", fillcolor="rgba(0,212,255,0.05)",
+                    line=dict(color="#00d4ff",width=2), marker=dict(color="#00d4ff",size=6),
+                ))
+                fig_rad.update_layout(**{**PLOTLY,"polar":dict(
+                    bgcolor="rgba(0,0,0,0)",
+                    angularaxis=dict(color="#1e3258",gridcolor="#0e1a2e",tickfont=dict(size=9,family="Geist Mono")),
+                    radialaxis=dict(range=[0,10],color="#1e3258",gridcolor="#0e1a2e"),
+                ),"height":300})
+                st.plotly_chart(fig_rad, use_container_width=True, config={"displayModeBar":False})
+
+            # Score distribution
+            st.markdown('<div class="sec">📊 Score Distribution</div>', unsafe_allow_html=True)
+            bins = {"0-4":0,"5-6":0,"7-8":0,"9-10":0}
+            for s in scores:
+                v = s.get("score",0)
+                if v<=4: bins["0-4"]+=1
+                elif v<=6: bins["5-6"]+=1
+                elif v<=8: bins["7-8"]+=1
+                else: bins["9-10"]+=1
+            fig_dist = go.Figure(go.Bar(
+                x=list(bins.keys()), y=list(bins.values()),
+                marker_color=["#fb2c36","#fbbf24","#00d4ff","#00c896"],
+                marker_line_width=0, text=list(bins.values()),
+                textposition="outside", textfont=dict(size=11, color="#3d5580"),
             ))
-            fig_line.add_hline(y=avg_score, line_dash="dot", line_color="rgba(0,229,255,0.35)",
-                annotation_text=f"avg {avg_score:.1f}", annotation_font_color="#00e5ff")
-            fig_line.update_layout(**{**PLOTLY_LAYOUT, "height": 240, "showlegend": False,
-                "yaxis": {**PLOTLY_LAYOUT.get("yaxis",{}), "range": [0, 10.5]},
-                "xaxis": {**PLOTLY_LAYOUT.get("xaxis",{})}})
-            st.plotly_chart(fig_line, use_container_width=True, config={"displayModeBar": False})
+            fig_dist.update_layout(**PLOTLY, height=200, showlegend=False)
+            st.plotly_chart(fig_dist, use_container_width=True, config={"displayModeBar":False})
 
-        # ── Word count per Q ──────────────────────────────────
-        if st.session_state.word_counts and len(st.session_state.word_counts) >= 2:
-            st.markdown('<div class="sec-label">📝 Words per Answer</div>', unsafe_allow_html=True)
-            wc_vals = st.session_state.word_counts
-            wc_labels = [f"Q{i+1}" for i in range(len(wc_vals))]
-            fig_wc = go.Figure(go.Bar(
-                x=wc_labels, y=wc_vals,
-                marker_color=["#10b981" if 80<=w<=250 else "#f59e0b" if w<80 else "#f43f5e" for w in wc_vals],
-                marker_line_width=0,
-            ))
-            fig_wc.add_hline(y=80,  line_dash="dot", line_color="rgba(16,185,129,0.3)", annotation_text="min ideal", annotation_font_color="rgba(16,185,129,0.5)", annotation_font_size=10)
-            fig_wc.add_hline(y=250, line_dash="dot", line_color="rgba(244,63,94,0.3)",  annotation_text="max ideal", annotation_font_color="rgba(244,63,94,0.5)",  annotation_font_size=10)
-            fig_wc.update_layout(**PLOTLY_LAYOUT, height=180, showlegend=False)
-            st.plotly_chart(fig_wc, use_container_width=True, config={"displayModeBar": False})
+            # Type distribution
+            type_counts = Counter(item.get("type","technical") for item in feedback_list)
+            if type_counts:
+                st.markdown('<div class="sec">🏷️ Question Type Distribution</div>', unsafe_allow_html=True)
+                type_colors = {"technical":"#7c3aed","behavioral":"#00d4ff","situational":"#fbbf24","rapport":"#00c896","ambition":"#fb923c"}
+                fig_type = go.Figure(go.Pie(
+                    labels=list(type_counts.keys()),
+                    values=list(type_counts.values()),
+                    hole=0.6,
+                    marker_colors=[type_colors.get(k,"#94a3b8") for k in type_counts.keys()],
+                    textfont=dict(family="Geist Mono",size=9),
+                ))
+                fig_type.update_layout(**{**PLOTLY,"height":200,"showlegend":True,
+                    "legend":dict(font=dict(family="Geist Mono",size=9,color="#3d5580"),bgcolor="rgba(0,0,0,0)")})
+                st.plotly_chart(fig_type, use_container_width=True, config={"displayModeBar":False})
 
-        # ── Q-by-Q breakdown ──────────────────────────────────
-        st.markdown('<div class="sec-label">📋 Question Breakdown</div>', unsafe_allow_html=True)
-        st.markdown('<div class="panel">', unsafe_allow_html=True)
+            # Communication stats
+            st.markdown('<div class="sec">🎙️ Communication Quality</div>', unsafe_allow_html=True)
+            fp_color = "#00c896" if filler_pct<3 else "#fbbf24" if filler_pct<6 else "#fb2c36"
+            fp_label = "Excellent" if filler_pct<3 else "Acceptable" if filler_pct<6 else "Needs work"
+            st.markdown(f"""
+            <div class="glass" style="padding:1.2rem">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem">
+                    <div style="font-family:'Geist Mono',monospace;font-size:0.62rem;color:var(--t4)">FILLER DENSITY</div>
+                    <div style="font-family:'Geist',sans-serif;font-weight:700;font-size:0.9rem;color:{fp_color}">{filler_pct:.1f}% · {fp_label}</div>
+                </div>
+                <div style="height:3px;background:var(--b2);border-radius:99px;overflow:hidden">
+                    <div style="height:100%;width:{min(filler_pct/10*100,100):.0f}%;background:{fp_color};border-radius:99px"></div>
+                </div>
+                <div style="font-family:'Geist Mono',monospace;font-size:0.62rem;color:var(--t4);margin-top:0.5rem">
+                    {total_fillers} filler words · {total_words} total words · avg {avg_words} per answer
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    with tab2:
+        st.markdown('<div class="glass" style="padding:1.5rem">', unsafe_allow_html=True)
         for i, item in enumerate(feedback_list):
-            sc = item["eval"].get("score", 0)
-            verdict = item["eval"].get("verdict", "—")
-            q_t = item.get("type","technical")
-            q_info = QUESTION_TYPES.get(q_t, ("❓","badge-technical",q_t.title()))
-            comp = item.get("competency","—")
-            diff = item.get("difficulty","medium")
-            diff_color = {"easy":"#10b981","medium":"#f59e0b","hard":"#f43f5e"}.get(diff,"#7a93bb")
-            time_taken = item.get("time", 0)
-            score_color = "#10b981" if sc >= 7 else "#f59e0b" if sc >= 5 else "#f43f5e"
-            wc = item.get("qa", {}).get("word_count", 0)
-            fc = item.get("qa", {}).get("filler_count", 0)
+            sc = item["eval"].get("score",0)
+            sc_c = score_color(sc)
+            verdict = item["eval"].get("verdict","—")
+            qt      = item.get("type","technical")
+            qinfo   = QUESTION_TYPES.get(qt,("❓","qb-tech",qt.title()))
+            comp    = item.get("competency","—")
+            diff    = item.get("difficulty","medium")
+            diff_c  = {"easy":"diff-e","medium":"diff-m","hard":"diff-h"}.get(diff,"diff-m")
+            wc      = item.get("qa",{}).get("wc",0)
+            fc      = item.get("qa",{}).get("filler_count",0)
+            star    = item.get("qa",{}).get("star_score",0)
+            t_secs  = item.get("time",0)
 
             st.markdown(f"""
-            <div class="q-timeline-item">
-                <div class="q-timeline-num">Q{i+1}</div>
-                <div class="q-timeline-content">
-                    <div class="q-timeline-q">{item['q'][:90]}{'…' if len(item['q'])>90 else ''}</div>
-                    <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.3rem;align-items:center">
-                        <span style="font-family:'DM Mono',monospace;font-size:0.7rem;color:{score_color};background:rgba(0,0,0,0.2);border:1px solid {score_color}40;padding:0.18rem 0.55rem;border-radius:99px">
-                            {sc:.1f}/10 · {verdict}
-                        </span>
-                        <span class="q-type-badge {q_info[1]}">{q_info[0]} {q_info[2]}</span>
-                        <span class="q-competency">{comp}</span>
-                        <span style="font-family:'DM Mono',monospace;font-size:0.6rem;color:{diff_color}">{diff.upper()}</span>
-                        {f'<span style="font-family:\'DM Mono\',monospace;font-size:0.62rem;color:var(--text3)">⏱ {time_taken}s · {wc}w · {fc} fillers</span>' if wc else ''}
+            <div class="qbt-item">
+                <div class="qbt-num">Q{i+1}</div>
+                <div class="qbt-body">
+                    <div class="qbt-q">{item['q'][:95]}{'…' if len(item['q'])>95 else ''}</div>
+                    <div class="qbt-tags">
+                        <span class="score-pill" style="color:{sc_c};border-color:{sc_c}40;background:rgba(0,0,0,0.2)">{sc:.1f}/10 · {verdict}</span>
+                        <span class="q-badge {qinfo[1]}">{qinfo[0]} {qinfo[2]}</span>
+                        <span class="q-comp-tag">{comp}</span>
+                        <span class="q-diff {diff_c}">{diff.upper()}</span>
+                        {'<span style="font-family:\'Geist Mono\',monospace;font-size:0.6rem;color:var(--t4)">⏱ '+str(t_secs)+'s · '+str(wc)+'w · '+str(fc)+' fillers · ⭐'+str(star)+'/4</span>' if wc else ''}
                     </div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
-            with st.expander(f"Full feedback — Q{i+1}: {item['q'][:50]}…"):
-                st.write(f"**Answer:** {item['a']}")
-                tones = item['eval'].get('tone_signals', [])
+
+            with st.expander(f"Full feedback — Q{i+1}: {item['q'][:55]}…"):
+                st.markdown(f"**Answer:** {item['a']}")
+                tones = item["eval"].get("tone_signals",[])
                 if tones:
-                    st.write(f"**Tone signals:** {' · '.join(tones)}")
-                col_a, col_b = st.columns(2)
-                with col_a:
+                    chips = "".join([f'<span class="tone-chip {"tc-pos" if t in POSITIVE_TONE else "tc-neg" if t in NEGATIVE_TONE else "tc-neu"}">{t}</span>' for t in tones])
+                    st.markdown(f'<div class="tone-chips">{chips}</div>', unsafe_allow_html=True)
+                ca, cb = st.columns(2)
+                with ca:
                     st.success(f"**Strength:** {item['eval'].get('strength','—')}")
                     st.info(f"**Suggestion:** {item['eval'].get('suggestion','—')}")
-                with col_b:
+                with cb:
                     st.error(f"**Gap:** {item['eval'].get('weakness','—')}")
-                    if item['eval'].get('ideal_answer_hint'):
-                        st.markdown(f'<div class="tip-box">💡 **Ideal:** {item["eval"]["ideal_answer_hint"]}</div>', unsafe_allow_html=True)
-                # STAR analysis
-                qa = item.get("qa", {})
-                if qa.get("star_signals") and item.get("type") in ("behavioral","situational"):
-                    star = qa["star_signals"]
-                    star_html = "".join([
-                        f'<div class="star-cell"><div class="star-cell-label">{k}</div><div class="star-cell-value {"star-found" if v else "star-missing"}">{"✓" if v else "○"}</div></div>'
-                        for k, v in star.items()
+                    ideal = item["eval"].get("ideal_hint","")
+                    if ideal:
+                        st.markdown(f'<div class="tip neon">💡 {ideal}</div>', unsafe_allow_html=True)
+                # STAR
+                qa_d = item.get("qa",{})
+                if qa_d.get("star") and item.get("type") in ("behavioral","situational"):
+                    star_cells = "".join([
+                        f'<div class="star-cell {"active" if v else ""}"><div class="star-label">{k}</div><div class="star-val {"star-y" if v else "star-n"}">{"✓" if v else "○"}</div></div>'
+                        for k,v in qa_d["star"].items()
                     ])
-                    st.markdown(f'<div class="star-grid" style="max-width:300px">{star_html}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="max-width:300px;margin-top:0.5rem"><div class="star-grid">{star_cells}</div></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with right:
-        # ── Competency radar ──────────────────────────────────
-        comp_scores_agg = {k: sum(v)/len(v) for k, v in st.session_state.competency_scores.items() if v}
-        if len(comp_scores_agg) >= 3:
-            st.markdown('<div class="sec-label">🕸️ Competency Radar</div>', unsafe_allow_html=True)
-            cats   = list(comp_scores_agg.keys())
-            vals_r = list(comp_scores_agg.values())
-            cats_c = cats + [cats[0]]
-            vals_c = vals_r + [vals_r[0]]
-            fig_r = go.Figure(go.Scatterpolar(
-                r=vals_c, theta=cats_c, fill="toself",
-                fillcolor="rgba(0,229,255,0.07)",
-                line=dict(color="#00e5ff", width=2.5),
-                marker=dict(color="#00e5ff", size=7),
-            ))
-            fig_r.update_layout(**{**PLOTLY_LAYOUT, "polar": dict(
-                bgcolor="rgba(0,0,0,0)",
-                angularaxis=dict(color="#2d4464", gridcolor="#111e30", tickfont=dict(size=10)),
-                radialaxis=dict(range=[0,10], color="#2d4464", gridcolor="#111e30"),
-            )}, height=320)
-            st.plotly_chart(fig_r, use_container_width=True, config={"displayModeBar": False})
-
-            # Competency score list
-            for comp, s in sorted(comp_scores_agg.items(), key=lambda x: -x[1]):
-                bar_color = "#10b981" if s >= 7 else "#f59e0b" if s >= 5 else "#f43f5e"
-                bar_pct = s / 10 * 100
-                st.markdown(f"""
-                <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.5rem">
-                    <div style="font-family:'DM Mono',monospace;font-size:0.68rem;color:var(--text2);min-width:120px">{comp}</div>
-                    <div style="flex:1;height:3px;background:var(--border);border-radius:99px;overflow:hidden">
-                        <div style="height:100%;width:{bar_pct:.0f}%;background:{bar_color};border-radius:99px"></div>
-                    </div>
-                    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.8rem;color:{bar_color};min-width:28px">{s:.1f}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-        # ── Score distribution ────────────────────────────────
-        st.markdown('<div class="sec-label" style="margin-top:1.5rem">📊 Score Distribution</div>', unsafe_allow_html=True)
-        if scores:
-            vals = [s.get("score",0) for s in scores]
-            bins = {"0–4": 0, "5–6": 0, "7–8": 0, "9–10": 0}
-            for v in vals:
-                if v <= 4: bins["0–4"] += 1
-                elif v <= 6: bins["5–6"] += 1
-                elif v <= 8: bins["7–8"] += 1
-                else: bins["9–10"] += 1
-            fig_b = go.Figure(go.Bar(
-                x=list(bins.keys()), y=list(bins.values()),
-                marker_color=["#f43f5e","#f59e0b","#00e5ff","#10b981"],
-                marker_line_width=0, text=list(bins.values()), textposition="outside",
-                textfont=dict(color="#7a93bb", size=11),
-            ))
-            fig_b.update_layout(**PLOTLY_LAYOUT, height=200, showlegend=False)
-            st.plotly_chart(fig_b, use_container_width=True, config={"displayModeBar": False})
-
-        # ── Filler word analysis ──────────────────────────────
-        if total_fillers > 0 or total_words > 0:
-            st.markdown('<div class="sec-label" style="margin-top:1.5rem">🎙️ Communication Quality</div>', unsafe_allow_html=True)
-            filler_pct = (total_fillers / max(total_words, 1)) * 100
-            filler_color = "#10b981" if filler_pct < 3 else "#f59e0b" if filler_pct < 6 else "#f43f5e"
-            filler_label = "Excellent" if filler_pct < 3 else "Acceptable" if filler_pct < 6 else "High — needs work"
-            st.markdown(f"""
-            <div class="panel" style="padding:1.5rem">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem">
-                    <div style="font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--text3)">FILLER DENSITY</div>
-                    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;color:{filler_color}">{filler_pct:.1f}% · {filler_label}</div>
-                </div>
-                <div style="height:4px;background:var(--border);border-radius:99px;overflow:hidden">
-                    <div style="height:100%;width:{min(filler_pct/10*100,100):.0f}%;background:{filler_color};border-radius:99px"></div>
-                </div>
-                <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--text3);margin-top:0.6rem">
-                    {total_fillers} filler words across {total_words} total words · avg {avg_words} words/answer
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        # ── AI Summary ────────────────────────────────────────
-        st.markdown('<div class="sec-label" style="margin-top:1.5rem">🤖 {persona["name"]}\'s Assessment</div>', unsafe_allow_html=True)
-        if "ai_summary" not in st.session_state or not st.session_state.ai_summary:
-            with st.spinner(f"{persona['name']} is writing your assessment…"):
-                st.session_state.ai_summary = generate_summary(
-                    feedback_list, role, name, avg_score,
-                    st.session_state.persona, mode, llm
+    with tab3:
+        if not st.session_state.ai_summary:
+            with st.spinner(f"✍️ {persona['name']} is writing your assessment…"):
+                st.session_state.ai_summary = gen_summary(
+                    feedback_list, role, name, avg, st.session_state.persona, mode, llm
                 )
         st.markdown(f"""
-        <div class="panel panel-glow-violet">
-            <div style="font-family:'Fraunces',serif;font-style:italic;font-size:0.96rem;color:var(--text2);line-height:1.8;">
-                {st.session_state.ai_summary.replace(chr(10), '<br>')}
+        <div class="glass glass-neon">
+            <div class="sec sec-neon">{persona['avatar']} {persona['name']}'s Assessment</div>
+            <div style="font-family:'Instrument Serif',serif;font-style:italic;font-size:0.97rem;color:var(--t2);line-height:1.85">
+                {st.session_state.ai_summary.replace(chr(10),'<br>')}
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-    # ── Export + Actions ──────────────────────────────────────
-    st.markdown("---")
-    st.markdown('<div class="sec-label">⬇️ Export & Actions</div>', unsafe_allow_html=True)
+    with tab4:
+        profile = st.session_state.get("resume_profile")
+        if profile:
+            fit = profile.get("overall_fit_score",0)
+            fc_ = score_color(fit)
+            st.markdown(f"""
+            <div class="glass glass-electric">
+                <div class="sec sec-electric">📄 Resume Intelligence</div>
+                <div class="rp-name">{profile.get('candidate_name','Candidate')}</div>
+                <div class="rp-role">{profile.get('current_role','Professional')} · {profile.get('years_experience','N/A')}</div>
+                <div style="margin:0.6rem 0;font-family:'Geist Mono',monospace;font-size:0.7rem;color:var(--t3)">Education: {profile.get('education','N/A')}</div>
+                <div style="font-family:'Geist Mono',monospace;font-size:0.7rem;color:var(--t3);margin-bottom:0.8rem">Companies: {' · '.join(profile.get('companies',[])[:4]) or 'N/A'}</div>
+            """, unsafe_allow_html=True)
 
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        json_data = build_json_export(st.session_state)
-        st.download_button(
-            "📦 Download JSON Report",
-            data=json_data,
-            file_name=f"ketu_interview_{name.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
-            mime="application/json",
-            use_container_width=True,
-        )
-    with col2:
-        if st.button("🔄  New Interview", use_container_width=True):
-            for k in list(st.session_state.keys()):
-                del st.session_state[k]
-            st.rerun()
-    with col3:
-        if st.button("📋  Same Role Again", use_container_width=True):
-            resume = st.session_state.resume_text
-            jd     = st.session_state.jd_text
-            role_t = st.session_state.role_title
-            cat    = st.session_state.category_tag
-            for k in list(st.session_state.keys()):
-                del st.session_state[k]
-            st.session_state.resume_text  = resume
-            st.session_state.jd_text      = jd
-            st.session_state.role_title   = role_t
-            st.session_state.category_tag = cat
-            st.rerun()
-    with col4:
-        if st.button("🔥  Intense Mode", use_container_width=True, help="Retry in Intense mode"):
-            resume = st.session_state.resume_text
-            jd     = st.session_state.jd_text
-            role_t = st.session_state.role_title
-            cat    = st.session_state.category_tag
-            for k in list(st.session_state.keys()):
-                del st.session_state[k]
-            st.session_state.resume_text   = resume
-            st.session_state.jd_text       = jd
-            st.session_state.role_title    = role_t
-            st.session_state.category_tag  = cat
-            st.session_state.interview_mode = "Intense"
-            st.rerun()
+            c_r, c_l = st.columns(2)
+            with c_r:
+                st.markdown(f'<div style="font-family:Geist Mono,monospace;font-size:0.62rem;color:var(--t4);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:0.4rem">Role Fit Score</div><div style="font-family:Geist,sans-serif;font-weight:900;font-size:2.5rem;color:{fc_}">{fit:.1f}/10</div><div style="font-family:Geist Mono,monospace;font-size:0.7rem;color:var(--t3);margin-top:0.3rem">{profile.get("fit_rationale","")}</div>', unsafe_allow_html=True)
+            with c_l:
+                if profile.get("strengths"):
+                    st.markdown('<div style="font-family:Geist Mono,monospace;font-size:0.62rem;color:rgba(0,200,150,0.6);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:0.4rem">Top Strengths</div>', unsafe_allow_html=True)
+                    for s in profile["strengths"][:3]:
+                        st.markdown(f'<div style="font-family:Geist,sans-serif;font-size:0.82rem;color:var(--t2);padding:0.2rem 0">✓ {s}</div>', unsafe_allow_html=True)
 
-# ============================================================
-# SIDEBAR
-# ============================================================
-with st.sidebar:
-    st.markdown('<div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:1.9rem;color:#00e5ff;margin-bottom:0.2rem;letter-spacing:-0.02em">KETU AI</div>', unsafe_allow_html=True)
-    st.caption("Elite · Adaptive · Intelligent")
-    st.markdown("---")
+            if profile.get("matching_skills"):
+                st.markdown('<div style="font-family:Geist Mono,monospace;font-size:0.62rem;color:rgba(0,200,150,0.6);letter-spacing:0.14em;text-transform:uppercase;margin:1rem 0 0.4rem">Skill Matches</div>', unsafe_allow_html=True)
+                st.markdown('<div class="skills-match">' + "".join([f'<span class="skill-tag sk-match">✓ {s}</span>' for s in profile["matching_skills"]]) + '</div>', unsafe_allow_html=True)
 
-    screen = st.session_state.get("screen", "setup")
-    persona = PERSONAS.get(st.session_state.get("persona","Ketu"), PERSONAS["Ketu"])
+            if profile.get("gap_skills"):
+                st.markdown('<div style="font-family:Geist Mono,monospace;font-size:0.62rem;color:rgba(251,44,54,0.6);letter-spacing:0.14em;text-transform:uppercase;margin:0.8rem 0 0.4rem">Skill Gaps</div>', unsafe_allow_html=True)
+                st.markdown('<div class="skills-match">' + "".join([f'<span class="skill-tag sk-gap">✗ {s}</span>' for s in profile["gap_skills"]]) + '</div>', unsafe_allow_html=True)
 
-    if screen == "interview":
-        idx = st.session_state.current
-        n   = len(st.session_state.questions)
-        st.progress(idx / n if n else 0)
-        c1, c2 = st.columns(2)
-        c1.metric("Question", f"{idx}/{n}")
-        if st.session_state.scores:
-            avg = sum(s.get("score",0) for s in st.session_state.scores) / len(st.session_state.scores)
-            c2.metric("Grade", grade_letter(avg))
-        st.markdown(f"**Interviewer:** {persona['avatar']} {persona['name']}")
-        st.markdown(f"**Mode:** {st.session_state.interview_mode}")
-        st.markdown("---")
-        if st.button("⏹ End Interview", use_container_width=True):
-            st.session_state.screen = "results"
-            st.rerun()
+            if profile.get("red_flags"):
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.warning("⚠️ Potential concerns noted during analysis: " + " · ".join(profile["red_flags"]))
+            st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.info("Resume profile analysis was not run (JD not pasted before upload, or LLM call failed).")
 
-    elif screen == "results":
-        if st.session_state.scores:
-            avg = sum(s.get("score",0) for s in st.session_state.scores) / len(st.session_state.scores)
-            st.success(f"Interview complete · {grade_letter(avg)}")
-            st.metric("Final Score", f"{avg:.1f}/10")
+    with tab5:
+        st.markdown('<div class="sec">⬇️ Download Your Report</div>', unsafe_allow_html=True)
+        c1, c2, c3, c4, c5 = st.columns(5)
+        with c1:
+            st.download_button("📦 JSON Report", data=build_json(st.session_state),
+                file_name=f"ketu_v2_{name.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                mime="application/json", use_container_width=True)
+        with c2:
+            st.download_button("📊 CSV Export", data=build_csv(st.session_state),
+                file_name=f"ketu_v2_{name.replace(' ','_')}.csv",
+                mime="text/csv", use_container_width=True)
+        with c3:
+            if st.button("🔄 New Interview", use_container_width=True):
+                for k in list(st.session_state.keys()): del st.session_state[k]
+                st.rerun()
+        with c4:
+            if st.button("📋 Same Role", use_container_width=True):
+                r,j,t,c_ = st.session_state.resume_text, st.session_state.jd_text, st.session_state.role_title, st.session_state.category_tag
+                for k in list(st.session_state.keys()): del st.session_state[k]
+                st.session_state.resume_text=r; st.session_state.jd_text=j; st.session_state.role_title=t; st.session_state.category_tag=c_
+                st.rerun()
+        with c5:
+            if st.button("🔥 Intense Mode", use_container_width=True):
+                r,j,t,c_ = st.session_state.resume_text, st.session_state.jd_text, st.session_state.role_title, st.session_state.category_tag
+                for k in list(st.session_state.keys()): del st.session_state[k]
+                st.session_state.resume_text=r; st.session_state.jd_text=j; st.session_state.role_title=t; st.session_state.category_tag=c_
+                st.session_state.interview_mode="Intense"
+                st.rerun()
 
-    st.markdown("---")
-    st.markdown("##### ⚡ Capabilities")
-    feats = [
-        "3 distinct interviewer personas",
-        "6 role competency frameworks",
-        "3 interview pressure modes",
-        "Adaptive follow-up intelligence",
-        "Live STAR method tracking",
-        "Filler word density analysis",
-        "Answer verbosity coaching",
-        "Real-time word count meter",
-        "Competency radar charts",
-        "Ideal answer hints post-answer",
-        "Groq Whisper voice input",
-        "TTS question delivery",
-        "JSON export with full report",
-        "Llama 3.3-70B via Groq",
-    ]
-    for f in feats:
-        st.markdown(f"<div style='font-family:DM Mono,monospace;font-size:0.68rem;color:#3d5278;padding:0.18rem 0'>· {f}</div>", unsafe_allow_html=True)
+        st.markdown("""
+        <div class="export-block" style="margin-top:1rem">
+            <div class="export-icon">📦</div>
+            <div>
+                <div class="export-title">Full Interview Report (JSON)</div>
+                <div class="export-desc">Includes metadata, per-question scores, AI assessment, competency breakdown, STAR analysis, communication stats, and resume profile.</div>
+            </div>
+        </div>
+        <div class="export-block" style="margin-top:0.5rem">
+            <div class="export-icon">📊</div>
+            <div>
+                <div class="export-title">Tabular Export (CSV)</div>
+                <div class="export-desc">Question-by-question breakdown in spreadsheet format — perfect for tracking progress across sessions.</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.caption(f"{datetime.now().strftime('%H:%M · %d %b %Y')}")
-
-# ============================================================
+# ─────────────────────────────────────────────────────────────
 # ROUTER
-# ============================================================
-if st.session_state.screen == "setup":
+# ─────────────────────────────────────────────────────────────
+render_sidebar()
+
+screen = st.session_state.screen
+if screen == "setup":
     screen_setup()
-elif st.session_state.screen == "interview":
+elif screen == "interview":
     screen_interview()
-elif st.session_state.screen == "results":
+elif screen == "results":
     screen_results()
