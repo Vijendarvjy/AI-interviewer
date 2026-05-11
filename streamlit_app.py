@@ -1882,8 +1882,12 @@ def screen_results():
                     marker_line_width=0, text=[f"{v:.1f}" for _, v in sorted_c],
                     textposition="outside", textfont=dict(size=10, color="#8a9fc4"),
                 ))
-                fig_comp.update_layout(**PLOTLY_BASE, height=max(180, len(sorted_c)*36),
-                    showlegend=False, xaxis=dict(range=[0, 11]))
+                layout_config = {**PLOTLY_BASE,"height": max(180, len(sorted_c) * 36),"showlegend": False,}
+
+                # Merge xaxis safely
+                layout_config["xaxis"] = {**PLOTLY_BASE.get("xaxis", {}),"range": [0, 11]}
+
+                fig_comp.update_layout(**layout_config)
                 st.plotly_chart(fig_comp, use_container_width=True, config={"displayModeBar": False})
 
         with col_r:
