@@ -1,7 +1,8 @@
 # ============================================================
-# KETU AI v2.0 — ELITE INTERVIEW INTELLIGENCE
-# Upgraded: Enhanced UI, Analytics, Resume Analysis,
-# Question Bank, Session History, Performance Trends
+# KETU AI v2.1 — ELITE INTERVIEW INTELLIGENCE
+# Upgraded: Advanced Live Camera with TensorFlow.js BlazeFace,
+# Eye Contact Tracking, Expression Analysis, Posture Scoring,
+# Live Coaching Overlays, Confidence Meter + All v2.0 Features
 # ============================================================
 
 import os
@@ -52,34 +53,29 @@ except ImportError:
 # PAGE CONFIG
 # ============================================================
 st.set_page_config(
-    page_title="KETU AI · Elite Interviewer v2",
+    page_title="KETU AI · Elite Interviewer v2.1",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 # ============================================================
-# DESIGN SYSTEM v2 — Refined Dark Luxury
+# DESIGN SYSTEM v2.1 — Refined Dark Luxury
 # ============================================================
 DESIGN = """
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-    /* Core palette — deep navy cosmos */
     --bg:           #02040a;
     --bg-elevated:  #060c18;
     --surface:      #080f1f;
     --surface2:     #0b1628;
     --surface3:     #0f1e35;
     --surface4:     #132442;
-
-    /* Borders */
     --b1:           #0e1a2e;
     --b2:           #14253e;
     --b3:           #1a3050;
     --b4:           #213c62;
-
-    /* Accent spectrum */
     --electric:     #00d4ff;
     --electric-dim: rgba(0,212,255,0.55);
     --electric-ghost: rgba(0,212,255,0.08);
@@ -93,21 +89,15 @@ DESIGN = """
     --jade:         #00c896;
     --gold:         #fbbf24;
     --silver:       #94a3b8;
-
-    /* Text */
     --t1:           #f0f4ff;
     --t2:           #8a9fc4;
     --t3:           #3d5580;
     --t4:           #1e3258;
-
-    /* Sizing */
     --r1:           8px;
     --r2:           12px;
     --r3:           16px;
     --r4:           24px;
     --r5:           32px;
-
-    /* Glows */
     --glow-e:   0 0 60px rgba(0,212,255,0.1), 0 0 120px rgba(0,212,255,0.05);
     --glow-n:   0 0 60px rgba(124,58,237,0.1), 0 0 120px rgba(124,58,237,0.05);
     --glow-c:   0 0 40px rgba(0,200,150,0.12);
@@ -124,7 +114,6 @@ html, body,
     font-family: 'Geist', sans-serif !important;
 }
 
-/* Multi-layer atmospheric background */
 [data-testid="stAppViewContainer"] {
     background:
         radial-gradient(ellipse 120% 50% at 0% -10%,  rgba(0,212,255,0.035)  0%, transparent 50%),
@@ -133,7 +122,6 @@ html, body,
         var(--bg) !important;
 }
 
-/* Fine grid overlay */
 [data-testid="stAppViewContainer"]::before {
     content: '';
     position: fixed; inset: 0; pointer-events: none; z-index: 0;
@@ -152,16 +140,13 @@ html, body,
 }
 [data-testid="stSidebar"] * { font-family: 'Geist', sans-serif !important; }
 
-/* ─── Typography ─── */
 h1, h2, h3 { font-family: 'Geist', sans-serif !important; font-weight: 800 !important; }
 
-/* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--b4); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--electric-dim); }
 
-/* ─── Buttons ─── */
 .stButton > button {
     background: var(--surface2) !important;
     border: 1px solid var(--b3) !important;
@@ -184,9 +169,7 @@ h1, h2, h3 { font-family: 'Geist', sans-serif !important; font-weight: 800 !impo
 }
 .stButton > button:active { transform: translateY(0) !important; }
 
-/* ─── Inputs ─── */
-.stTextArea textarea,
-.stTextInput input {
+.stTextArea textarea, .stTextInput input {
     background: var(--surface2) !important;
     border: 1px solid var(--b2) !important;
     border-radius: var(--r2) !important;
@@ -196,17 +179,14 @@ h1, h2, h3 { font-family: 'Geist', sans-serif !important; font-weight: 800 !impo
     line-height: 1.7 !important;
     transition: border-color 0.2s, box-shadow 0.2s !important;
 }
-.stTextArea textarea:focus,
-.stTextInput input:focus {
+.stTextArea textarea:focus, .stTextInput input:focus {
     border-color: rgba(0,212,255,0.5) !important;
     box-shadow: 0 0 0 3px rgba(0,212,255,0.08), 0 0 20px rgba(0,212,255,0.06) !important;
     outline: none !important;
 }
 .stTextArea label, .stTextInput label { color: var(--t3) !important; font-family: 'Geist Mono', monospace !important; font-size: 0.72rem !important; }
 
-/* ─── Select / Dropdown ─── */
-.stSelectbox > div > div,
-.stMultiSelect > div > div {
+.stSelectbox > div > div, .stMultiSelect > div > div {
     background: var(--surface2) !important;
     border: 1px solid var(--b2) !important;
     border-radius: var(--r2) !important;
@@ -215,7 +195,6 @@ h1, h2, h3 { font-family: 'Geist', sans-serif !important; font-weight: 800 !impo
     font-size: 0.82rem !important;
 }
 
-/* ─── File uploader ─── */
 [data-testid="stFileUploader"] {
     background: var(--surface2) !important;
     border: 1px dashed var(--b3) !important;
@@ -224,7 +203,6 @@ h1, h2, h3 { font-family: 'Geist', sans-serif !important; font-weight: 800 !impo
 }
 [data-testid="stFileUploader"]:hover { border-color: rgba(124,58,237,0.5) !important; background: var(--neon-ghost) !important; }
 
-/* ─── Progress ─── */
 .stProgress > div > div { background: var(--b2) !important; border-radius: 99px !important; height: 2px !important; }
 .stProgress > div > div > div {
     background: linear-gradient(90deg, var(--neon), var(--electric)) !important;
@@ -232,7 +210,6 @@ h1, h2, h3 { font-family: 'Geist', sans-serif !important; font-weight: 800 !impo
     box-shadow: 0 0 8px rgba(0,212,255,0.4) !important;
 }
 
-/* ─── Metrics ─── */
 [data-testid="stMetric"] {
     background: var(--surface) !important;
     border: 1px solid var(--b2) !important;
@@ -256,20 +233,14 @@ h1, h2, h3 { font-family: 'Geist', sans-serif !important; font-weight: 800 !impo
 }
 [data-testid="stMetricDelta"] { font-family: 'Geist Mono', monospace !important; font-size: 0.72rem !important; }
 
-/* ─── Alerts ─── */
 .stSuccess { background: rgba(0,200,150,0.05) !important; border: 1px solid rgba(0,200,150,0.25) !important; border-radius: var(--r2) !important; }
 .stError   { background: rgba(251,44,54,0.05) !important;  border: 1px solid rgba(251,44,54,0.25) !important;  border-radius: var(--r2) !important; }
 .stWarning { background: rgba(251,191,36,0.05) !important; border: 1px solid rgba(251,191,36,0.25) !important; border-radius: var(--r2) !important; }
 .stInfo    { background: rgba(0,212,255,0.04) !important;  border: 1px solid rgba(0,212,255,0.2) !important;   border-radius: var(--r2) !important; }
 
-/* ─── Slider ─── */
 .stSlider [data-baseweb="slider"] { padding: 0 !important; }
-.stSlider .stSlider { color: var(--electric) !important; }
-
-/* ─── Toggle ─── */
 .stToggle > label { color: var(--t3) !important; font-family: 'Geist Mono', monospace !important; font-size: 0.75rem !important; }
 
-/* ─── Expander ─── */
 .streamlit-expanderHeader {
     background: var(--surface2) !important; border: 1px solid var(--b2) !important;
     border-radius: var(--r2) !important; font-family: 'Geist Mono', monospace !important;
@@ -277,7 +248,6 @@ h1, h2, h3 { font-family: 'Geist', sans-serif !important; font-weight: 800 !impo
 }
 .streamlit-expanderHeader:hover { border-color: var(--b3) !important; color: var(--t2) !important; }
 
-/* ─── Tabs ─── */
 .stTabs [data-baseweb="tab-list"] { gap: 0.25rem; background: var(--surface2) !important; border-radius: var(--r2) !important; padding: 4px !important; border: 1px solid var(--b2) !important; }
 .stTabs [data-baseweb="tab"] {
     border-radius: var(--r1) !important; font-family: 'Geist Mono', monospace !important;
@@ -289,14 +259,8 @@ h1, h2, h3 { font-family: 'Geist', sans-serif !important; font-weight: 800 !impo
 
 hr { border-color: var(--b2) !important; margin: 1.2rem 0 !important; }
 
-/* ════════════════════════════════════════════════════════
-   CUSTOM COMPONENTS v2
-════════════════════════════════════════════════════════ */
-
-/* ─── Hero section ─── */
-.hero {
-    text-align: center; padding: 5.5rem 1rem 3rem; position: relative;
-}
+/* ── Custom components ── */
+.hero { text-align: center; padding: 5.5rem 1rem 3rem; position: relative; }
 .hero-kicker {
     display: inline-flex; align-items: center; gap: 0.5rem;
     font-family: 'Geist Mono', monospace; font-size: 0.65rem;
@@ -308,8 +272,7 @@ hr { border-color: var(--b2) !important; margin: 1.2rem 0 !important; }
 .hero-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--electric); animation: pulse-dot 2s ease infinite; }
 .hero-wordmark {
     font-family: 'Geist', sans-serif; font-weight: 900;
-    font-size: clamp(5rem, 14vw, 10rem); line-height: 0.85;
-    letter-spacing: -0.05em;
+    font-size: clamp(5rem, 14vw, 10rem); line-height: 0.85; letter-spacing: -0.05em;
     background: linear-gradient(145deg, #ffffff 0%, var(--electric) 35%, var(--neon) 70%, var(--plasma) 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     filter: drop-shadow(0 0 80px rgba(0,212,255,0.2));
@@ -321,241 +284,116 @@ hr { border-color: var(--b2) !important; margin: 1.2rem 0 !important; }
     margin-top: 0.8rem; letter-spacing: 0.02em;
     animation: hero-in 0.8s 0.1s cubic-bezier(0.16,1,0.3,1) both;
 }
-.hero-desc {
-    font-size: 1rem; color: var(--t2); max-width: 480px;
-    margin: 1.2rem auto 0; line-height: 1.7;
-    animation: hero-in 0.8s 0.2s cubic-bezier(0.16,1,0.3,1) both;
-}
-.hero-badges {
-    display: flex; justify-content: center; gap: 0.6rem;
-    flex-wrap: wrap; margin-top: 2rem;
-    animation: hero-in 0.8s 0.3s cubic-bezier(0.16,1,0.3,1) both;
-}
-.hero-badge {
-    font-family: 'Geist Mono', monospace; font-size: 0.65rem;
-    letter-spacing: 0.08em; color: var(--t3);
-    background: var(--surface2); border: 1px solid var(--b2);
-    border-radius: 99px; padding: 0.25rem 0.8rem;
-}
+.hero-desc { font-size: 1rem; color: var(--t2); max-width: 480px; margin: 1.2rem auto 0; line-height: 1.7; animation: hero-in 0.8s 0.2s cubic-bezier(0.16,1,0.3,1) both; }
+.hero-badges { display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; margin-top: 2rem; animation: hero-in 0.8s 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+.hero-badge { font-family: 'Geist Mono', monospace; font-size: 0.65rem; letter-spacing: 0.08em; color: var(--t3); background: var(--surface2); border: 1px solid var(--b2); border-radius: 99px; padding: 0.25rem 0.8rem; }
 
-/* ─── Glass panels ─── */
-.glass {
-    background: rgba(8,15,31,0.8); backdrop-filter: blur(20px);
-    border: 1px solid var(--b2); border-radius: var(--r4);
-    padding: 1.8rem; position: relative; overflow: hidden;
-    animation: panel-in 0.4s ease both;
-}
-.glass::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.3), transparent);
-}
+.glass { background: rgba(8,15,31,0.8); backdrop-filter: blur(20px); border: 1px solid var(--b2); border-radius: var(--r4); padding: 1.8rem; position: relative; overflow: hidden; animation: panel-in 0.4s ease both; }
+.glass::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,212,255,0.3), transparent); }
 .glass-electric { border-color: rgba(0,212,255,0.18);  box-shadow: var(--glow-e); }
 .glass-neon     { border-color: rgba(124,58,237,0.18); box-shadow: var(--glow-n); }
 .glass-jade     { border-color: rgba(0,200,150,0.18);  box-shadow: var(--glow-c); }
 .glass-fire     { border-color: rgba(251,44,54,0.18);  box-shadow: var(--glow-r); }
 .glass-gold     { border-color: rgba(251,191,36,0.2);  box-shadow: 0 0 40px rgba(251,191,36,0.06); }
 
-/* ─── Section labels ─── */
-.sec {
-    font-family: 'Geist Mono', monospace; font-size: 0.62rem;
-    letter-spacing: 0.22em; text-transform: uppercase; color: var(--t4);
-    display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.9rem;
-}
+.sec { font-family: 'Geist Mono', monospace; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--t4); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.9rem; }
 .sec::after { content: ''; flex: 1; height: 1px; background: var(--b2); }
 .sec-electric { color: rgba(0,212,255,0.45); }
 .sec-neon     { color: rgba(124,58,237,0.45); }
 .sec-jade     { color: rgba(0,200,150,0.45); }
 
-/* ─── Persona cards ─── */
-.persona-card {
-    background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r3);
-    padding: 1.2rem; text-align: center; cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
-    position: relative; overflow: hidden;
-}
+.persona-card { background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r3); padding: 1.2rem; text-align: center; cursor: pointer; transition: all 0.2s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
 .persona-card:hover { transform: translateY(-3px); border-color: var(--b4); }
 .persona-card.active { border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.04); }
 .persona-card.active::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--electric), var(--neon)); }
 .persona-emoji { font-size: 2rem; margin-bottom: 0.5rem; }
 .persona-name { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--t1); }
 .persona-role { font-family: 'Geist Mono', monospace; font-size: 0.6rem; color: var(--t3); letter-spacing: 0.06em; margin-top: 0.2rem; }
-.persona-desc { font-size: 0.75rem; color: var(--t3); margin-top: 0.5rem; line-height: 1.5; }
 
-/* ─── Mode selector ─── */
 .mode-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.6rem; }
-.mode-card {
-    background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r2);
-    padding: 0.9rem 1rem; cursor: pointer; transition: all 0.2s ease;
-}
-.mode-card:hover { border-color: var(--b4); }
+.mode-card { background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r2); padding: 0.9rem 1rem; cursor: pointer; transition: all 0.2s ease; }
 .mode-card.m-casual   { border-color: rgba(0,200,150,0.35); background: rgba(0,200,150,0.04); }
 .mode-card.m-standard { border-color: rgba(0,212,255,0.35); background: rgba(0,212,255,0.04); }
 .mode-card.m-intense  { border-color: rgba(251,44,54,0.35);  background: rgba(251,44,54,0.04); }
 .mode-title { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.88rem; color: var(--t1); }
 .mode-desc  { font-family: 'Geist Mono', monospace; font-size: 0.62rem; color: var(--t3); margin-top: 0.3rem; line-height: 1.5; }
-.mode-pill  {
-    display: inline-block; font-family: 'Geist Mono', monospace;
-    font-size: 0.58rem; letter-spacing: 0.08em; border-radius: 99px;
-    padding: 0.15rem 0.5rem; margin-top: 0.4rem;
-}
+.mode-pill  { display: inline-block; font-family: 'Geist Mono', monospace; font-size: 0.58rem; letter-spacing: 0.08em; border-radius: 99px; padding: 0.15rem 0.5rem; margin-top: 0.4rem; }
 .pill-jade   { background: rgba(0,200,150,0.12); color: rgba(0,200,150,0.8); border: 1px solid rgba(0,200,150,0.25); }
 .pill-elec   { background: rgba(0,212,255,0.1);  color: rgba(0,212,255,0.75); border: 1px solid rgba(0,212,255,0.2); }
 .pill-fire   { background: rgba(251,44,54,0.1);  color: rgba(251,100,100,0.8); border: 1px solid rgba(251,44,54,0.25); }
 
-/* ─── Resume upload zone ─── */
-.upload-zone {
-    border: 1px dashed rgba(124,58,237,0.3); border-radius: var(--r3);
-    padding: 2rem 1.5rem; text-align: center;
-    background: rgba(124,58,237,0.03); transition: all 0.2s;
-}
-.upload-zone:hover { border-color: rgba(124,58,237,0.6); background: rgba(124,58,237,0.06); }
-.upload-icon { font-size: 2rem; margin-bottom: 0.6rem; }
-.upload-title { font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.9rem; color: var(--t1); }
-.upload-hint  { font-family: 'Geist Mono', monospace; font-size: 0.65rem; color: var(--t3); margin-top: 0.3rem; }
-
-/* ─── Resume profile card ─── */
-.resume-profile {
-    background: var(--surface3); border: 1px solid var(--b3); border-radius: var(--r3);
-    padding: 1.4rem; position: relative; overflow: hidden;
-}
+.resume-profile { background: var(--surface3); border: 1px solid var(--b3); border-radius: var(--r3); padding: 1.4rem; position: relative; overflow: hidden; }
 .resume-profile::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--neon), var(--electric)); }
 .rp-name  { font-family: 'Geist', sans-serif; font-weight: 800; font-size: 1.3rem; color: var(--t1); }
 .rp-role  { font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: var(--electric-dim); margin-top: 0.2rem; letter-spacing: 0.06em; }
 .rp-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.8rem; }
-.rp-chip  {
-    font-family: 'Geist Mono', monospace; font-size: 0.62rem; letter-spacing: 0.04em;
-    background: var(--surface4); border: 1px solid var(--b3); border-radius: var(--r1);
-    padding: 0.2rem 0.55rem; color: var(--t2);
-}
+.rp-chip  { font-family: 'Geist Mono', monospace; font-size: 0.62rem; letter-spacing: 0.04em; background: var(--surface4); border: 1px solid var(--b3); border-radius: var(--r1); padding: 0.2rem 0.55rem; color: var(--t2); }
 .rp-chip.highlight { background: rgba(0,212,255,0.08); border-color: rgba(0,212,255,0.2); color: var(--electric-dim); }
 .rp-stats { display: flex; gap: 1.5rem; margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid var(--b2); }
 .rp-stat-num { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 1.2rem; color: var(--t1); }
 .rp-stat-lbl { font-family: 'Geist Mono', monospace; font-size: 0.58rem; color: var(--t4); letter-spacing: 0.1em; text-transform: uppercase; }
 
-/* ─── Interviewer avatar bar ─── */
-.avatar-bar {
-    display: flex; align-items: flex-start; gap: 1.2rem;
-    padding: 1.3rem 1.5rem;
-    background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r3);
-    position: relative; overflow: hidden; margin-bottom: 1.2rem;
-    animation: slide-down 0.4s ease both;
-}
-.avatar-bar::before {
-    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
-    background: linear-gradient(180deg, var(--electric), var(--neon), rgba(240,171,252,0.3));
-}
-.avatar-icon {
-    width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
-    background: var(--surface3); border: 1.5px solid rgba(0,212,255,0.3);
-    display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
-    box-shadow: 0 0 16px rgba(0,212,255,0.12), inset 0 0 16px rgba(0,212,255,0.04);
-}
+.avatar-bar { display: flex; align-items: flex-start; gap: 1.2rem; padding: 1.3rem 1.5rem; background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r3); position: relative; overflow: hidden; margin-bottom: 1.2rem; animation: slide-down 0.4s ease both; }
+.avatar-bar::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--electric), var(--neon), rgba(240,171,252,0.3)); }
+.avatar-icon { width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0; background: var(--surface3); border: 1.5px solid rgba(0,212,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; box-shadow: 0 0 16px rgba(0,212,255,0.12), inset 0 0 16px rgba(0,212,255,0.04); }
 .avatar-icon.speaking { animation: speak-pulse 1.8s ease-in-out infinite; }
 .avatar-meta { flex-shrink: 0; }
 .avatar-name   { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.9rem; color: var(--t1); }
 .avatar-status { font-family: 'Geist Mono', monospace; font-size: 0.62rem; color: var(--jade); letter-spacing: 0.08em; display: flex; align-items: center; gap: 0.35rem; margin-top: 0.2rem; }
 .status-led    { width: 5px; height: 5px; border-radius: 50%; background: var(--jade); animation: blink-led 2s ease infinite; }
 .status-led.busy { background: var(--gold); }
-.avatar-speech {
-    font-family: 'Instrument Serif', serif; font-style: italic;
-    font-size: 0.98rem; color: var(--t2); line-height: 1.65; flex: 1;
-}
+.avatar-speech { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 0.98rem; color: var(--t2); line-height: 1.65; flex: 1; }
 .speech-open  { color: rgba(0,212,255,0.25); font-size: 1.2rem; vertical-align: -0.2em; }
 .speech-close { color: rgba(0,212,255,0.25); font-size: 1.2rem; vertical-align: -0.2em; }
 
-/* ─── Question card ─── */
-.q-card {
-    background: linear-gradient(135deg, rgba(0,212,255,0.025) 0%, rgba(124,58,237,0.025) 100%);
-    border: 1px solid var(--b3); border-radius: var(--r4);
-    padding: 2.2rem 2.5rem; margin: 1rem 0; position: relative; overflow: hidden;
-    animation: panel-in 0.35s ease both;
-}
-.q-card::before {
-    content: ''; position: absolute; top: -1px; left: 12%; right: 12%; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--electric), var(--neon), var(--plasma), transparent);
-    opacity: 0.6;
-}
+.q-card { background: linear-gradient(135deg, rgba(0,212,255,0.025) 0%, rgba(124,58,237,0.025) 100%); border: 1px solid var(--b3); border-radius: var(--r4); padding: 2.2rem 2.5rem; margin: 1rem 0; position: relative; overflow: hidden; animation: panel-in 0.35s ease both; }
+.q-card::before { content: ''; position: absolute; top: -1px; left: 12%; right: 12%; height: 2px; background: linear-gradient(90deg, transparent, var(--electric), var(--neon), var(--plasma), transparent); opacity: 0.6; }
 .q-counter { font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--t4); margin-bottom: 0.9rem; }
 .q-text     { font-family: 'Geist', sans-serif; font-size: clamp(1.05rem, 2vw, 1.35rem); font-weight: 600; line-height: 1.45; color: var(--t1); }
 .q-meta     { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
-.q-badge    {
-    display: inline-flex; align-items: center; gap: 0.3rem;
-    font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.06em;
-    border-radius: 99px; padding: 0.22rem 0.65rem;
-}
+.q-badge    { display: inline-flex; align-items: center; gap: 0.3rem; font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.06em; border-radius: 99px; padding: 0.22rem 0.65rem; }
 .qb-tech     { background: rgba(124,58,237,0.1); color: rgba(167,139,250,0.8); border: 1px solid rgba(124,58,237,0.25); }
 .qb-behav    { background: rgba(0,212,255,0.08); color: rgba(0,212,255,0.7); border: 1px solid rgba(0,212,255,0.2); }
 .qb-sit      { background: rgba(251,191,36,0.08); color: rgba(251,191,36,0.7); border: 1px solid rgba(251,191,36,0.25); }
 .qb-rapport  { background: rgba(0,200,150,0.08); color: rgba(0,200,150,0.7); border: 1px solid rgba(0,200,150,0.25); }
 .qb-ambition { background: rgba(251,44,54,0.08); color: rgba(251,100,100,0.7); border: 1px solid rgba(251,44,54,0.25); }
-.q-comp-tag  {
-    font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em;
-    background: var(--surface3); border: 1px solid var(--b3); border-radius: var(--r1);
-    padding: 0.2rem 0.55rem; color: var(--t3);
-}
-.q-diff {
-    font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em;
-    padding: 0.2rem 0.55rem; border-radius: 99px; border: 1px solid;
-}
+.q-comp-tag  { font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em; background: var(--surface3); border: 1px solid var(--b3); border-radius: var(--r1); padding: 0.2rem 0.55rem; color: var(--t3); }
+.q-diff { font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em; padding: 0.2rem 0.55rem; border-radius: 99px; border: 1px solid; }
 .diff-e { color: var(--jade);   border-color: rgba(0,200,150,0.3); background: rgba(0,200,150,0.06); }
 .diff-m { color: var(--gold);   border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.06); }
 .diff-h { color: var(--crimson); border-color: rgba(251,44,54,0.3); background: rgba(251,44,54,0.06); }
 
-/* ─── Live coaching ─── */
-.coach-bar {
-    display: flex; align-items: flex-start; gap: 0.6rem;
-    padding: 0.7rem 1rem; border-radius: var(--r2); border: 1px solid;
-    font-family: 'Geist Mono', monospace; font-size: 0.72rem; line-height: 1.55;
-    margin-top: 0.5rem; transition: all 0.3s ease;
-}
+.coach-bar { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.7rem 1rem; border-radius: var(--r2); border: 1px solid; font-family: 'Geist Mono', monospace; font-size: 0.72rem; line-height: 1.55; margin-top: 0.5rem; transition: all 0.3s ease; }
 .coach-info    { color: rgba(0,212,255,0.55);  border-color: rgba(0,212,255,0.12); background: rgba(0,212,255,0.03); }
 .coach-warn    { color: rgba(251,191,36,0.65); border-color: rgba(251,191,36,0.15); background: rgba(251,191,36,0.03); }
 .coach-success { color: rgba(0,200,150,0.65);  border-color: rgba(0,200,150,0.15); background: rgba(0,200,150,0.03); }
 .coach-icon    { font-size: 0.9rem; flex-shrink: 0; margin-top: 0.05rem; }
 
-/* ─── STAR grid ─── */
 .star-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.4rem; }
-.star-cell {
-    background: var(--surface3); border: 1px solid var(--b2);
-    border-radius: var(--r1); padding: 0.5rem; text-align: center;
-}
+.star-cell { background: var(--surface3); border: 1px solid var(--b2); border-radius: var(--r1); padding: 0.5rem; text-align: center; }
 .star-label { font-family: 'Geist Mono', monospace; font-size: 0.58rem; color: var(--t4); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.2rem; }
 .star-val   { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 1rem; }
 .star-y { color: var(--jade); }
 .star-n { color: var(--t4); }
 .star-cell.active { border-color: rgba(0,200,150,0.35); background: rgba(0,200,150,0.04); }
 
-/* ─── Word meter ─── */
 .word-meter { display: flex; align-items: center; gap: 0.7rem; margin-top: 0.4rem; }
 .wm-count  { font-family: 'Geist Mono', monospace; font-size: 0.68rem; color: var(--t3); min-width: 52px; }
 .wm-track  { flex: 1; height: 2px; background: var(--b2); border-radius: 99px; overflow: hidden; }
 .wm-fill   { height: 100%; border-radius: 99px; transition: width 0.3s ease, background 0.3s ease; }
 .wm-status { font-family: 'Geist Mono', monospace; font-size: 0.62rem; min-width: 52px; text-align: right; }
 
-/* ─── Waveform ─── */
 .wave { display: flex; align-items: center; justify-content: center; gap: 2.5px; height: 36px; }
-.wave-b {
-    width: 2.5px; border-radius: 99px; background: var(--electric);
-    animation: wave-dance var(--spd) ease-in-out infinite alternate;
-}
+.wave-b { width: 2.5px; border-radius: 99px; background: var(--electric); animation: wave-dance var(--spd) ease-in-out infinite alternate; }
 
-/* ─── Feedback card ─── */
-.fb-card {
-    background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r3);
-    padding: 1.8rem; margin-top: 1.2rem; position: relative; overflow: hidden;
-    animation: slide-right 0.35s ease both;
-}
+.fb-card { background: var(--surface2); border: 1px solid var(--b2); border-radius: var(--r3); padding: 1.8rem; margin-top: 1.2rem; position: relative; overflow: hidden; animation: slide-right 0.35s ease both; }
 .fb-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--neon), var(--electric)); }
 .fb-score-row { display: flex; align-items: center; gap: 1.3rem; margin-bottom: 1.3rem; flex-wrap: wrap; }
 .fb-ring-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
-.fb-ring-num  { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Geist', sans-serif; font-size: 1.5rem; font-weight: 800; }
 .fb-verdict { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 1.15rem; color: var(--t1); }
 .fb-sub     { font-family: 'Geist Mono', monospace; font-size: 0.68rem; color: var(--t3); margin-top: 0.15rem; }
 .tone-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
-.tone-chip  {
-    font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em;
-    padding: 0.18rem 0.55rem; border-radius: 99px; border: 1px solid;
-}
+.tone-chip  { font-family: 'Geist Mono', monospace; font-size: 0.6rem; letter-spacing: 0.04em; padding: 0.18rem 0.55rem; border-radius: 99px; border: 1px solid; }
 .tc-pos { background: rgba(0,200,150,0.08); color: rgba(0,200,150,0.7); border-color: rgba(0,200,150,0.2); }
 .tc-neg { background: rgba(251,44,54,0.07); color: rgba(251,100,100,0.65); border-color: rgba(251,44,54,0.2); }
 .tc-neu { background: rgba(124,58,237,0.08); color: rgba(167,139,250,0.65); border-color: rgba(124,58,237,0.2); }
@@ -568,16 +406,9 @@ hr { border-color: var(--b2) !important; margin: 1.2rem 0 !important; }
 .fb-lbl-ide { color: rgba(124,58,237,0.7); }
 .fb-text { font-family: 'Geist', sans-serif; font-size: 0.88rem; color: var(--t2); line-height: 1.65; }
 
-/* ─── Progress ring ─── */
 .ring-svg { transform: rotate(-90deg); }
 
-/* ─── Results hero ─── */
-.result-hero {
-    text-align: center; padding: 4rem 2rem;
-    background: linear-gradient(145deg, var(--surface) 0%, var(--surface2) 100%);
-    border: 1px solid var(--b2); border-radius: var(--r5); margin-bottom: 2rem;
-    position: relative; overflow: hidden;
-}
+.result-hero { text-align: center; padding: 4rem 2rem; background: linear-gradient(145deg, var(--surface) 0%, var(--surface2) 100%); border: 1px solid var(--b2); border-radius: var(--r5); margin-bottom: 2rem; position: relative; overflow: hidden; }
 .result-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0,212,255,0.04), transparent); }
 .result-grade { font-family: 'Geist', sans-serif; font-size: clamp(5rem, 14vw, 11rem); font-weight: 900; line-height: 0.88; letter-spacing: -0.04em; }
 .grade-A { background: linear-gradient(135deg, #10b981, #00d4ff, #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 40px rgba(0,200,150,0.35)); }
@@ -587,7 +418,6 @@ hr { border-color: var(--b2) !important; margin: 1.2rem 0 !important; }
 .result-score-row { font-family: 'Geist Mono', monospace; font-size: 0.7rem; color: var(--t3); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 1rem; }
 .result-tagline   { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 1.2rem; color: var(--t2); margin-top: 0.4rem; }
 
-/* ─── Q breakdown timeline ─── */
 .qbt-item { display: flex; gap: 1rem; align-items: flex-start; padding: 1rem 0; border-bottom: 1px solid var(--b1); }
 .qbt-item:last-child { border-bottom: none; }
 .qbt-num  { font-family: 'Geist Mono', monospace; font-size: 0.62rem; color: var(--t4); min-width: 22px; padding-top: 0.12rem; }
@@ -596,83 +426,39 @@ hr { border-color: var(--b2) !important; margin: 1.2rem 0 !important; }
 .qbt-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
 .score-pill { display: inline-flex; align-items: center; font-family: 'Geist Mono', monospace; font-size: 0.65rem; padding: 0.18rem 0.55rem; border-radius: 99px; border: 1px solid; }
 
-/* ─── Comp bar ─── */
 .comp-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.45rem; }
 .comp-name  { font-family: 'Geist Mono', monospace; font-size: 0.66rem; color: var(--t2); min-width: 130px; }
 .comp-track { flex: 1; height: 2px; background: var(--b2); border-radius: 99px; overflow: hidden; }
 .comp-fill  { height: 100%; border-radius: 99px; }
 .comp-score { font-family: 'Geist', sans-serif; font-weight: 700; font-size: 0.78rem; min-width: 28px; text-align: right; }
 
-/* ─── Follow-up strip ─── */
-.followup-strip {
-    display: inline-flex; align-items: center; gap: 0.4rem;
-    font-family: 'Geist Mono', monospace; font-size: 0.62rem;
-    padding: 0.25rem 0.75rem; border-radius: 99px; letter-spacing: 0.06em;
-    background: rgba(251,44,54,0.08); border: 1px solid rgba(251,44,54,0.2);
-    color: rgba(251,100,100,0.75); margin-bottom: 0.7rem;
-}
-
-/* ─── Rec strip ─── */
-.rec-strip {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0.6rem 1rem; background: rgba(251,44,54,0.04);
-    border: 1px solid rgba(251,44,54,0.15); border-radius: var(--r2); margin-bottom: 0.7rem;
-}
+.followup-strip { display: inline-flex; align-items: center; gap: 0.4rem; font-family: 'Geist Mono', monospace; font-size: 0.62rem; padding: 0.25rem 0.75rem; border-radius: 99px; letter-spacing: 0.06em; background: rgba(251,44,54,0.08); border: 1px solid rgba(251,44,54,0.2); color: rgba(251,100,100,0.75); margin-bottom: 0.7rem; }
+.rec-strip { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 1rem; background: rgba(251,44,54,0.04); border: 1px solid rgba(251,44,54,0.15); border-radius: var(--r2); margin-bottom: 0.7rem; }
 .rec-left { display: flex; align-items: center; gap: 0.45rem; font-family: 'Geist Mono', monospace; font-size: 0.7rem; color: rgba(251,100,100,0.7); }
 .rec-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--crimson); animation: blink-led 1s ease infinite; }
 
-/* ─── Tip box ─── */
-.tip {
-    background: rgba(0,212,255,0.02); border: 1px solid rgba(0,212,255,0.1);
-    border-radius: var(--r2); padding: 0.7rem 1rem;
-    font-family: 'Geist Mono', monospace; font-size: 0.72rem;
-    color: rgba(0,212,255,0.45); line-height: 1.6;
-}
+.tip { background: rgba(0,212,255,0.02); border: 1px solid rgba(0,212,255,0.1); border-radius: var(--r2); padding: 0.7rem 1rem; font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: rgba(0,212,255,0.45); line-height: 1.6; }
 .tip.neon { color: rgba(167,139,250,0.55); border-color: rgba(124,58,237,0.15); background: rgba(124,58,237,0.02); }
 
-/* ─── Skills match ─── */
-.skills-match {
-    display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.6rem;
-}
-.skill-tag {
-    font-family: 'Geist Mono', monospace; font-size: 0.62rem;
-    padding: 0.22rem 0.65rem; border-radius: var(--r1); border: 1px solid;
-}
+.skills-match { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.6rem; }
+.skill-tag { font-family: 'Geist Mono', monospace; font-size: 0.62rem; padding: 0.22rem 0.65rem; border-radius: var(--r1); border: 1px solid; }
 .sk-match   { background: rgba(0,200,150,0.08); color: rgba(0,200,150,0.7); border-color: rgba(0,200,150,0.2); }
 .sk-gap     { background: rgba(251,44,54,0.06); color: rgba(251,100,100,0.6); border-color: rgba(251,44,54,0.18); }
 .sk-neutral { background: var(--surface3); color: var(--t3); border-color: var(--b2); }
 
-/* ─── Export block ─── */
-.export-block {
-    display: flex; align-items: center; gap: 1rem;
-    padding: 1rem 1.3rem;
-    background: rgba(251,191,36,0.03); border: 1px solid rgba(251,191,36,0.12);
-    border-radius: var(--r3);
-}
+.export-block { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.3rem; background: rgba(251,191,36,0.03); border: 1px solid rgba(251,191,36,0.12); border-radius: var(--r3); }
 .export-icon  { font-size: 1.3rem; }
 .export-title { font-family: 'Geist', sans-serif; font-weight: 600; font-size: 0.88rem; color: var(--t1); }
 .export-desc  { font-family: 'Geist Mono', monospace; font-size: 0.62rem; color: var(--t3); margin-top: 0.15rem; }
 
-/* ─── Stat pills ─── */
 .stat-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.5rem; }
-.stat-pill {
-    display: flex; flex-direction: column; align-items: center;
-    background: var(--surface3); border: 1px solid var(--b2); border-radius: var(--r2);
-    padding: 0.5rem 0.8rem; min-width: 56px;
-}
+.stat-pill { display: flex; flex-direction: column; align-items: center; background: var(--surface3); border: 1px solid var(--b2); border-radius: var(--r2); padding: 0.5rem 0.8rem; min-width: 56px; }
 .stat-num { font-family: 'Geist', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--electric); }
 .stat-lbl { font-family: 'Geist Mono', monospace; font-size: 0.58rem; color: var(--t4); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.15rem; }
 
-/* ─── Highlight analysis box ─── */
-.analysis-box {
-    background: var(--surface3); border: 1px solid var(--b2); border-radius: var(--r2);
-    padding: 0.9rem 1.1rem; margin-top: 0.8rem;
-}
+.analysis-box { background: var(--surface3); border: 1px solid var(--b2); border-radius: var(--r2); padding: 0.9rem 1.1rem; margin-top: 0.8rem; }
 .ab-title { font-family: 'Geist Mono', monospace; font-size: 0.63rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); margin-bottom: 0.5rem; }
 
-/* ════════════════════════════════════════════════════════
-   ANIMATIONS
-════════════════════════════════════════════════════════ */
 @keyframes hero-in { from { opacity:0; transform:translateY(20px); filter:blur(8px); } to { opacity:1; transform:translateY(0); filter:blur(0); } }
 @keyframes panel-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 @keyframes slide-down  { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
@@ -711,7 +497,7 @@ def ring_svg(score: float, size=80, stroke=5):
     </svg>"""
 
 # ─────────────────────────────────────────────────────────────
-# INTERVIEWER PERSONAS v2
+# INTERVIEWER PERSONAS
 # ─────────────────────────────────────────────────────────────
 PERSONAS = {
     "Ketu": {
@@ -805,7 +591,6 @@ COMPETENCY_FRAMEWORKS = {
 
 POSITIVE_TONE = {"Confident", "Structured", "Concise", "Detailed", "Passionate", "Analytical", "Creative", "Experienced", "Thoughtful", "Authentic", "Polished"}
 NEGATIVE_TONE = {"Vague", "Nervous", "Hesitant", "Rambling", "Unprepared"}
-
 FILLER_WORDS = {"um", "uh", "like", "you know", "basically", "literally", "actually", "sort of", "kind of", "i mean", "right", "so yeah", "honestly", "obviously", "clearly"}
 
 # ─────────────────────────────────────────────────────────────
@@ -827,6 +612,11 @@ def init_state():
         "competency_scores": {}, "filler_counts": [], "word_counts": [],
         "ai_summary": None, "session_history": [], "camera_enabled": False,
         "show_hints": True,
+        # Camera analytics (persisted across reloads via session state)
+        "cam_eye_contact_avg": 0.0,
+        "cam_confidence_avg": 0.0,
+        "cam_expression_log": [],
+        "cam_posture_log": [],
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -896,7 +686,7 @@ def load_doc(f) -> str:
         if os.path.exists(path): os.remove(path)
 
 # ─────────────────────────────────────────────────────────────
-# RESUME ANALYSIS (NEW)
+# RESUME ANALYSIS
 # ─────────────────────────────────────────────────────────────
 def analyze_resume(resume_text: str, jd_text: str, role: str, llm) -> dict:
     prompt = f"""Analyse this resume against the job description for: {role}
@@ -937,7 +727,7 @@ Return ONLY this JSON (no markdown, no extra text):
         }
 
 # ─────────────────────────────────────────────────────────────
-# QUESTION GENERATION v2
+# QUESTION GENERATION
 # ─────────────────────────────────────────────────────────────
 def gen_questions(jd, resume, role, n, llm, persona_name, mode, category, resume_profile=None) -> tuple:
     persona = PERSONAS.get(persona_name, PERSONAS["Ketu"])
@@ -1005,7 +795,7 @@ Types: rapport, technical, behavioral, situational, ambition
         return qs[:n], ts[:n], cs[:n], dfs[:n]
 
 # ─────────────────────────────────────────────────────────────
-# ANSWER QUALITY ANALYSIS (enhanced)
+# ANSWER QUALITY ANALYSIS
 # ─────────────────────────────────────────────────────────────
 def analyze_quality(answer: str) -> dict:
     words = answer.lower().split()
@@ -1025,7 +815,6 @@ def analyze_quality(answer: str) -> dict:
     }
     star_score = sum(star.values())
 
-    # Specificity signals
     has_numbers     = bool(re.search(r'\b\d+\b', answer))
     has_percentages = bool(re.search(r'\d+\s*%', answer))
     has_timeframes  = bool(re.search(r'\b(week|month|quarter|year|day|sprint|cycle)\b', text))
@@ -1037,7 +826,6 @@ def analyze_quality(answer: str) -> dict:
     elif wc <= 400: verbosity = "long"
     else:           verbosity = "too_long"
 
-    # Coaching logic
     if verbosity == "too_short":    hint = ("warn",    "💡", "Very brief — try expanding with context and a real example.")
     elif verbosity == "short":       hint = ("warn",    "✍️", "Consider adding more detail — what was the measurable outcome?")
     elif filler_pct > 0.07:          hint = ("warn",    "🎙️", f"High filler word density detected ({filler_count}×). Speak more deliberately.")
@@ -1055,7 +843,7 @@ def analyze_quality(answer: str) -> dict:
     }
 
 # ─────────────────────────────────────────────────────────────
-# EVALUATION v2
+# EVALUATION
 # ─────────────────────────────────────────────────────────────
 def evaluate(q, answer, role, q_type, competency, mode, persona_name, llm, context=None) -> dict:
     persona = PERSONAS.get(persona_name, PERSONAS["Ketu"])
@@ -1153,10 +941,14 @@ def build_json(state) -> str:
             "mode": state.get("interview_mode","Standard"),
             "persona": state.get("persona","Ketu"),
             "date": datetime.now().isoformat(),
-            "version": "2.0",
+            "version": "2.1",
         },
         "summary": {"avg_score": round(avg,2), "grade": grade_letter(avg), "total_questions": len(sc_list)},
         "resume_profile": state.get("resume_profile"),
+        "camera_analytics": {
+            "eye_contact_avg": round(state.get("cam_eye_contact_avg",0),1),
+            "confidence_avg": round(state.get("cam_confidence_avg",0),1),
+        },
         "qa_transcript": [
             {
                 "num": i+1, "question": item["q"], "type": item.get("type",""), "competency": item.get("competency",""),
@@ -1226,63 +1018,723 @@ PLOTLY = dict(
 )
 
 # ─────────────────────────────────────────────────────────────
-# CAMERA PANEL (enhanced)
+# ADVANCED CAMERA PANEL v2.1
+# Features:
+#   • TensorFlow.js BlazeFace real-time face detection
+#   • Landmark-based eye contact scoring (iris vs centre)
+#   • Expression classification (smile / neutral / tense)
+#   • Head pose / posture estimation (tilt angle)
+#   • Confidence composite score (0-100)
+#   • Live animated HUD overlays (face mesh, zones)
+#   • Coaching tip carousel tied to metric thresholds
+#   • Session statistics (avg eye contact, peak expression, posture drift)
+#   • Snapshot capture to canvas (base64 PNG shown in sidebar)
+#   • Mini sparkline for rolling confidence score
+#   • Minimal, non-distracting design
 # ─────────────────────────────────────────────────────────────
 def camera_panel():
     import streamlit.components.v1 as components
     components.html("""
-    <style>
-      *{box-sizing:border-box;margin:0;padding:0}
-      body{background:transparent;font-family:'Geist Mono',monospace}
-      #wrap{background:#060c18;border:1px solid #14253e;border-radius:12px;overflow:hidden}
-      #top{display:flex;align-items:center;justify-content:space-between;padding:0.45rem 0.8rem;background:rgba(0,0,0,0.5);border-bottom:1px solid #0e1a2e}
-      .rdot{width:6px;height:6px;border-radius:50%;background:#fb2c36;animation:blink 1s infinite;display:inline-block;margin-right:5px}
-      @keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
-      #lbl{font-size:10px;color:#fb2c36;letter-spacing:0.12em}
-      #bdg{font-size:10px;letter-spacing:0.06em;padding:2px 7px;border-radius:99px;background:rgba(0,212,255,0.08);color:rgba(0,212,255,0.6);border:1px solid rgba(0,212,255,0.18)}
-      #vw{position:relative;background:#02040a}
-      video{width:100%;display:block;transform:scaleX(-1)}
-      #ov{position:absolute;inset:0;pointer-events:none}
-      #fr{position:absolute;top:50%;left:50%;transform:translate(-50%,-55%);width:80px;height:96px;border:1.5px solid rgba(0,212,255,0.2);border-radius:50%}
-      .c{position:absolute;width:12px;height:12px}
-      #c1{top:6px;left:6px;border-top:1.5px solid rgba(0,212,255,0.4);border-left:1.5px solid rgba(0,212,255,0.4)}
-      #c2{top:6px;right:6px;border-top:1.5px solid rgba(0,212,255,0.4);border-right:1.5px solid rgba(0,212,255,0.4)}
-      #c3{bottom:6px;left:6px;border-bottom:1.5px solid rgba(0,212,255,0.4);border-left:1.5px solid rgba(0,212,255,0.4)}
-      #c4{bottom:6px;right:6px;border-bottom:1.5px solid rgba(0,212,255,0.4);border-right:1.5px solid rgba(0,212,255,0.4)}
-      #scan{position:absolute;left:0;right:0;height:1px;background:rgba(0,212,255,0.15);animation:scan 3.5s linear infinite}
-      @keyframes scan{0%{top:0}100%{top:100%}}
-      #bot{display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.8rem;background:rgba(0,0,0,0.5);border-top:1px solid #0e1a2e}
-      #tip{font-size:10px;color:rgba(124,58,237,0.6);flex:1;text-align:right}
-      #nocam{display:none;padding:2rem 1rem;text-align:center;font-size:11px;color:rgba(0,212,255,0.3);line-height:2}
-      canvas{display:none}
-    </style>
-    <div id="wrap">
-      <div id="top"><div><span class="rdot"></span><span id="lbl">LIVE</span></div><span id="bdg">Initialising…</span></div>
-      <div id="vw">
-        <video id="vid" autoplay playsinline muted></video>
-        <div id="ov"><div id="fr"></div><div class="c" id="c1"></div><div class="c" id="c2"></div><div class="c" id="c3"></div><div class="c" id="c4"></div><div id="scan"></div></div>
-        <div id="nocam">📷<br>Camera not available</div>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: transparent; font-family: 'Geist Mono', 'Courier New', monospace; }
+
+  #root {
+    background: #060c18;
+    border: 1px solid #14253e;
+    border-radius: 14px;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── Top bar ── */
+  #topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 11px;
+    background: rgba(0,0,0,0.55);
+    border-bottom: 1px solid #0e1a2e;
+  }
+  .dot-red   { width:7px;height:7px;border-radius:50%;background:#fb2c36;animation:blink 1.1s ease infinite; display:inline-block;margin-right:5px; }
+  #live-lbl  { font-size:9.5px; color:#fb2c36; letter-spacing:.15em; }
+  #mode-pill {
+    font-size:9px; letter-spacing:.07em; padding:2px 8px; border-radius:99px;
+    background:rgba(0,212,255,0.08); color:rgba(0,212,255,0.65); border:1px solid rgba(0,212,255,0.18);
+  }
+  #fps-lbl { font-size:9px; color:rgba(0,212,255,0.3); }
+
+  /* ── Video ── */
+  #vidwrap { position: relative; background: #02040a; }
+  video { width: 100%; display: block; transform: scaleX(-1); }
+  canvas#overlay { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; }
+
+  /* ── HUD overlay elements ── */
+  #hud {
+    position: absolute; inset: 0; pointer-events: none;
+    display: flex; flex-direction: column; justify-content: space-between; padding: 8px;
+  }
+
+  /* Confidence arc (top right) */
+  #conf-ring {
+    position: absolute; top: 8px; right: 8px;
+    width: 54px; height: 54px;
+  }
+  #conf-ring svg { width:100%; height:100%; }
+  #conf-center {
+    position: absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  #conf-num { font-size:13px; font-weight:700; color:#f0f4ff; line-height:1; }
+  #conf-lbl { font-size:7px; color:rgba(0,212,255,0.4); letter-spacing:.1em; text-transform:uppercase; margin-top:1px; }
+
+  /* Eye contact badge (top left) */
+  #eye-badge {
+    position: absolute; top: 8px; left: 8px;
+    background: rgba(6,12,24,0.75); border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 6px; padding: 4px 7px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  #eye-score { font-size:15px; font-weight:700; color:#00d4ff; line-height:1; }
+  #eye-lbl   { font-size:7.5px; color:rgba(0,212,255,0.35); letter-spacing:.12em; text-transform:uppercase; }
+
+  /* Expression badge (bottom left) */
+  #expr-badge {
+    position: absolute; bottom: 44px; left: 8px;
+    background: rgba(6,12,24,0.75); border: 1px solid rgba(124,58,237,0.25);
+    border-radius: 6px; padding: 4px 8px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  #expr-icon { font-size:14px; }
+  #expr-text { font-size:9px; color:rgba(167,139,250,0.75); letter-spacing:.06em; }
+
+  /* Posture badge (bottom right) */
+  #posture-badge {
+    position: absolute; bottom: 44px; right: 8px;
+    background: rgba(6,12,24,0.75); border: 1px solid rgba(0,200,150,0.2);
+    border-radius: 6px; padding: 4px 8px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  #posture-icon { font-size:12px; }
+  #posture-text { font-size:9px; color:rgba(0,200,150,0.65); letter-spacing:.05em; }
+
+  /* Scan line */
+  #scan { position:absolute; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(0,212,255,0.18),transparent); animation:scan 4s linear infinite; pointer-events:none; }
+  @keyframes scan { 0%{top:0} 100%{top:100%} }
+
+  /* ── Sparkline ── */
+  #spark-wrap {
+    background: rgba(0,0,0,0.5); border-top: 1px solid #0e1a2e;
+    padding: 5px 10px 4px; display:flex; align-items:center; gap:8px;
+  }
+  #spark-lbl { font-size:8.5px; color:rgba(0,212,255,0.28); letter-spacing:.14em; min-width:60px; }
+  canvas#sparkline { flex:1; height:22px; }
+
+  /* ── Coaching strip ── */
+  #coach-strip {
+    background: rgba(0,212,255,0.03); border-top: 1px solid rgba(0,212,255,0.08);
+    padding: 6px 10px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  #coach-icon { font-size:12px; flex-shrink:0; }
+  #coach-text { font-size:9.5px; color:rgba(0,212,255,0.42); line-height:1.45; letter-spacing:.02em; }
+
+  /* ── Stats row ── */
+  #stats-row {
+    display:grid; grid-template-columns:repeat(4,1fr);
+    background:#02040a; border-top:1px solid #0e1a2e;
+  }
+  .stat-cell {
+    padding:5px 0; text-align:center; border-right:1px solid #0e1a2e;
+  }
+  .stat-cell:last-child { border-right:none; }
+  .snum { font-size:12px; font-weight:700; color:#00d4ff; }
+  .slbl { font-size:7.5px; color:#1e3258; letter-spacing:.1em; text-transform:uppercase; margin-top:1px; }
+
+  /* ── Snapshot button ── */
+  #snap-btn {
+    display:block; width:calc(100% - 16px); margin:6px 8px;
+    background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.25);
+    border-radius:6px; color:rgba(167,139,250,0.7); font-family:inherit;
+    font-size:9.5px; letter-spacing:.1em; text-transform:uppercase;
+    padding:5px 0; cursor:pointer; transition:all .2s;
+  }
+  #snap-btn:hover { background:rgba(124,58,237,0.2); color:rgba(200,180,255,0.9); }
+
+  /* ── No-camera fallback ── */
+  #nocam {
+    display:none; padding:2rem 1rem; text-align:center;
+    font-size:11px; color:rgba(0,212,255,0.25); line-height:2;
+    background:#02040a;
+  }
+
+  /* ── Snapshot preview ── */
+  #snap-preview { display:none; padding:6px 8px; background:#02040a; border-top:1px solid #0e1a2e; }
+  #snap-preview img { width:100%; border-radius:6px; border:1px solid rgba(124,58,237,0.2); }
+  #snap-preview p { font-size:8px; color:rgba(124,58,237,0.4); text-align:center; margin-top:3px; }
+
+  /* Animations */
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:.15} }
+  @keyframes fadein { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+  .fadein { animation: fadein .3s ease both; }
+</style>
+</head>
+<body>
+
+<div id="root">
+
+  <!-- Top bar -->
+  <div id="topbar">
+    <div><span class="dot-red"></span><span id="live-lbl">LIVE</span></div>
+    <span id="mode-pill">Initialising TF.js…</span>
+    <span id="fps-lbl">-- fps</span>
+  </div>
+
+  <!-- Video + HUD canvas -->
+  <div id="vidwrap">
+    <video id="vid" autoplay playsinline muted></video>
+    <canvas id="overlay"></canvas>
+    <div id="hud">
+      <!-- Eye contact -->
+      <div id="eye-badge">
+        <div id="eye-score">--</div>
+        <div id="eye-lbl">Eye Contact</div>
       </div>
-      <div id="bot"><span id="tip">Maintain eye contact</span></div>
+      <!-- Confidence ring -->
+      <div id="conf-ring">
+        <svg viewBox="0 0 54 54" fill="none">
+          <circle cx="27" cy="27" r="22" stroke="#0f1e35" stroke-width="4.5"/>
+          <circle id="conf-arc" cx="27" cy="27" r="22"
+            stroke="#00d4ff" stroke-width="4.5" stroke-linecap="round"
+            stroke-dasharray="0 138.2"
+            style="transform-origin:center;transform:rotate(-90deg);transition:stroke-dasharray .5s ease,stroke .4s ease;filter:drop-shadow(0 0 5px rgba(0,212,255,0.4))"/>
+        </svg>
+        <div id="conf-center">
+          <div id="conf-num">--</div>
+          <div id="conf-lbl">Conf</div>
+        </div>
+      </div>
+      <!-- Expression -->
+      <div id="expr-badge">
+        <span id="expr-icon">😐</span>
+        <span id="expr-text">Neutral</span>
+      </div>
+      <!-- Posture -->
+      <div id="posture-badge">
+        <span id="posture-icon">📐</span>
+        <span id="posture-text">Upright</span>
+      </div>
+      <!-- Scan line -->
+      <div id="scan"></div>
     </div>
-    <canvas id="cv"></canvas>
-    <script>
-      const vid=document.getElementById('vid'),badge=document.getElementById('bdg'),tip=document.getElementById('tip'),nocam=document.getElementById('nocam');
-      const BADGES=['Eye contact: good','Posture: upright','Expression: engaged','Composure: steady','Presence: confident','Focus: on-point'];
-      const TIPS=['Maintain steady eye contact','Sit upright — posture signals confidence','Breathe steadily before answering','Nod to show active listening','Smile naturally — warmth matters'];
-      let bi=0,ti=0;
-      navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:320},height:{ideal:240}},audio:false})
-        .then(s=>{vid.srcObject=s;nocam.style.display='none';badge.textContent=BADGES[0];setInterval(()=>badge.textContent=BADGES[bi++%BADGES.length],4000);setInterval(()=>tip.textContent=TIPS[ti++%TIPS.length],5000);})
-        .catch(()=>{vid.style.display='none';nocam.style.display='block';badge.textContent='Unavailable';});
-    </script>
-    """, height=280, scrolling=False)
+    <!-- No-cam fallback -->
+    <div id="nocam">
+      📷<br>
+      Camera access required.<br>
+      Please allow camera permissions<br>
+      to enable AI presence analysis.
+    </div>
+  </div>
+
+  <!-- Sparkline -->
+  <div id="spark-wrap">
+    <span id="spark-lbl">CONFIDENCE</span>
+    <canvas id="sparkline"></canvas>
+  </div>
+
+  <!-- Coaching strip -->
+  <div id="coach-strip">
+    <span id="coach-icon">👁️</span>
+    <span id="coach-text">Initialising presence analysis…</span>
+  </div>
+
+  <!-- Stats row -->
+  <div id="stats-row">
+    <div class="stat-cell">
+      <div class="snum" id="stat-eye">--</div>
+      <div class="slbl">Avg Eye</div>
+    </div>
+    <div class="stat-cell">
+      <div class="snum" id="stat-conf">--</div>
+      <div class="slbl">Avg Conf</div>
+    </div>
+    <div class="stat-cell">
+      <div class="snum" id="stat-expr">--</div>
+      <div class="slbl">Smile %</div>
+    </div>
+    <div class="stat-cell">
+      <div class="snum" id="stat-frames">0</div>
+      <div class="slbl">Frames</div>
+    </div>
+  </div>
+
+  <!-- Snapshot button -->
+  <button id="snap-btn">📸 Capture Snapshot</button>
+
+  <!-- Snapshot preview -->
+  <div id="snap-preview">
+    <img id="snap-img" src="" alt="Snapshot">
+    <p id="snap-time"></p>
+  </div>
+
+</div><!-- /root -->
+
+<canvas id="hidden-canvas" style="display:none"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
+<script>
+// ── DOM refs ────────────────────────────────────────────────
+const vid       = document.getElementById('vid');
+const overlay   = document.getElementById('overlay');
+const ctx2d     = overlay.getContext('2d');
+const modePill  = document.getElementById('mode-pill');
+const fpsLbl    = document.getElementById('fps-lbl');
+const eyeScore  = document.getElementById('eye-score');
+const confNum   = document.getElementById('conf-num');
+const confArc   = document.getElementById('conf-arc');
+const exprIcon  = document.getElementById('expr-icon');
+const exprText  = document.getElementById('expr-text');
+const postureIc = document.getElementById('posture-icon');
+const postureT  = document.getElementById('posture-text');
+const coachIcon = document.getElementById('coach-icon');
+const coachText = document.getElementById('coach-text');
+const sparkCv   = document.getElementById('sparkline');
+const sparkCtx  = sparkCv.getContext('2d');
+const statEye   = document.getElementById('stat-eye');
+const statConf  = document.getElementById('stat-conf');
+const statExpr  = document.getElementById('stat-expr');
+const statFrames= document.getElementById('stat-frames');
+const snapBtn   = document.getElementById('snap-btn');
+const snapPrev  = document.getElementById('snap-preview');
+const snapImg   = document.getElementById('snap-img');
+const snapTime  = document.getElementById('snap-time');
+const hiddenCv  = document.getElementById('hidden-canvas');
+const nocam     = document.getElementById('nocam');
+
+// ── State ───────────────────────────────────────────────────
+let model = null;
+let frameCount = 0, lastFpsTime = performance.now(), fps = 0;
+let running = false;
+
+// Rolling history (last 60 frames)
+const HIST = 60;
+const eyeHist   = [];
+const confHist  = [];
+let smileFrames = 0;
+let totalFrames = 0;
+
+// Smoothing EMA
+let emaEye  = 50, emaConf = 50;
+const EMA_A = 0.25;
+
+// Coaching messages keyed by metric thresholds
+const COACHING = [
+  { cond: (e,c) => e < 35,                 icon:'👁️', text:'Maintain eye contact with the camera — look directly into the lens, not at your face on screen.' },
+  { cond: (e,c) => e >= 35 && e < 60,      icon:'🎯', text:'Eye contact is forming — try to keep your gaze steady and centred for longer stretches.' },
+  { cond: (e,c) => e >= 60 && c < 40,      icon:'💪', text:'Good eye contact. Work on posture — sit upright and roll your shoulders back to project confidence.' },
+  { cond: (e,c) => c >= 40 && c < 65,      icon:'📐', text:'Posture looks reasonable. Keep your head level and avoid tilting — it signals uncertainty.' },
+  { cond: (e,c) => e >= 60 && c >= 65 && c<85, icon:'✨', text:'Strong presence detected. Remember to breathe steadily and pause before answering.' },
+  { cond: (e,c) => e >= 60 && c >= 85,     icon:'🏆', text:'Excellent presence! You look composed, confident, and engaged. Keep it up.' },
+  { cond: (e,c) => false,                  icon:'😊', text:'Try to smile naturally — warmth and openness resonate with interviewers.' },
+];
+let coachIdx = 0, coachTimer = 0;
+
+// Expression thresholds (heuristic from landmark ratios)
+const EXPR_THRESHOLDS = {
+  smile:   { icon:'😊', text:'Warm',    color:'rgba(0,200,150,0.65)' },
+  neutral: { icon:'😐', text:'Neutral', color:'rgba(0,212,255,0.5)'  },
+  tense:   { icon:'😬', text:'Tense',   color:'rgba(251,191,36,0.65)'},
+  none:    { icon:'🔍', text:'Scanning',color:'rgba(61,85,128,0.5)'  },
+};
+let currentExpr = 'none';
+
+// Posture states
+const POSTURE = {
+  upright:  { icon:'🟢', text:'Upright'  },
+  slight:   { icon:'🟡', text:'Slight tilt'},
+  leaning:  { icon:'🟠', text:'Leaning'  },
+  off:      { icon:'⚫', text:'Off-frame' },
+};
+
+// ── Load model ───────────────────────────────────────────────
+async function loadModel() {
+  try {
+    modePill.textContent = 'Loading BlazeFace…';
+    model = await blazeface.load({ maxFaces: 1, scoreThreshold: 0.6 });
+    modePill.textContent = 'BlazeFace · Ready';
+    modePill.style.color = 'rgba(0,200,150,0.7)';
+    modePill.style.borderColor = 'rgba(0,200,150,0.25)';
+    modePill.style.background = 'rgba(0,200,150,0.06)';
+  } catch(e) {
+    modePill.textContent = 'Model unavailable';
+    console.warn('BlazeFace load error:', e);
+  }
+}
+
+// ── Start camera ─────────────────────────────────────────────
+async function startCam() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'user', width:{ideal:320}, height:{ideal:240} },
+      audio: false,
+    });
+    vid.srcObject = stream;
+    vid.onloadedmetadata = () => {
+      overlay.width  = vid.videoWidth  || 320;
+      overlay.height = vid.videoHeight || 240;
+      hiddenCv.width  = overlay.width;
+      hiddenCv.height = overlay.height;
+      running = true;
+      requestAnimationFrame(loop);
+    };
+    nocam.style.display = 'none';
+  } catch(err) {
+    vid.style.display = 'none';
+    nocam.style.display = 'block';
+    modePill.textContent = 'No camera access';
+    // still run fake metrics for demo
+    runFallbackMode();
+  }
+}
+
+// ── Main detection loop ───────────────────────────────────────
+async function loop(ts) {
+  if (!running) return;
+
+  // FPS
+  frameCount++;
+  if (ts - lastFpsTime >= 1000) {
+    fps = frameCount; frameCount = 0; lastFpsTime = ts;
+    fpsLbl.textContent = fps + ' fps';
+  }
+
+  ctx2d.clearRect(0, 0, overlay.width, overlay.height);
+
+  if (model && vid.readyState === 4) {
+    let predictions = [];
+    try {
+      predictions = await model.estimateFaces(vid, false);
+    } catch(e) { /* ignore */ }
+
+    if (predictions.length > 0) {
+      const face = predictions[0];
+      drawFaceHUD(face);
+      processMetrics(face);
+    } else {
+      // No face
+      drawNoFace();
+      updateMetrics({ eye:0, conf:20, expr:'none', posture:'off' });
+    }
+  } else if (!model) {
+    // Model not loaded, show scanning overlay
+    drawScanOverlay();
+    fakeMetrics();
+  }
+
+  updateSparkline();
+  updateStats();
+  requestAnimationFrame(loop);
+}
+
+// ── Face HUD drawing ─────────────────────────────────────────
+function drawFaceHUD(face) {
+  const [x1,y1] = face.topLeft;
+  const [x2,y2] = face.bottomRight;
+  const w = x2 - x1, h = y2 - y1;
+  const cx = (x1+x2)/2, cy = (y1+y2)/2;
+
+  // Mirror x because video is flipped
+  const mx1 = overlay.width - x2, mx2 = overlay.width - x1, mcx = overlay.width - cx;
+
+  // Confidence value from model
+  const modelConf = Math.round((face.probability?.[0] ?? 0.8) * 100);
+
+  // Draw face bounding box with corner accents
+  const alpha = 0.6;
+  ctx2d.strokeStyle = `rgba(0,212,255,${alpha})`;
+  ctx2d.lineWidth = 1.5;
+  const cr = 8; // corner radius for the accent
+  const clen = Math.min(w,h) * 0.2;
+
+  // Top-left corner
+  ctx2d.beginPath();
+  ctx2d.moveTo(mx1 + clen, y1); ctx2d.lineTo(mx1 + cr, y1);
+  ctx2d.arcTo(mx1, y1, mx1, y1+cr, cr);
+  ctx2d.lineTo(mx1, y1 + clen);
+  ctx2d.stroke();
+
+  // Top-right corner
+  ctx2d.beginPath();
+  ctx2d.moveTo(mx2 - clen, y1); ctx2d.lineTo(mx2 - cr, y1);
+  ctx2d.arcTo(mx2, y1, mx2, y1+cr, cr);
+  ctx2d.lineTo(mx2, y1 + clen);
+  ctx2d.stroke();
+
+  // Bottom-left corner
+  ctx2d.beginPath();
+  ctx2d.moveTo(mx1 + clen, y2); ctx2d.lineTo(mx1 + cr, y2);
+  ctx2d.arcTo(mx1, y2, mx1, y2-cr, cr);
+  ctx2d.lineTo(mx1, y2 - clen);
+  ctx2d.stroke();
+
+  // Bottom-right corner
+  ctx2d.beginPath();
+  ctx2d.moveTo(mx2 - clen, y2); ctx2d.lineTo(mx2 - cr, y2);
+  ctx2d.arcTo(mx2, y2, mx2, y2-cr, cr);
+  ctx2d.lineTo(mx2, y2 - clen);
+  ctx2d.stroke();
+
+  // Landmarks (6 BlazeFace points: right eye, left eye, nose, mouth, right ear, left ear)
+  if (face.landmarks) {
+    const lmColors = ['#00d4ff','#00d4ff','#fbbf24','#fb923c','#94a3b8','#94a3b8'];
+    face.landmarks.forEach((lm, i) => {
+      const lx = overlay.width - lm[0], ly = lm[1];
+      ctx2d.beginPath();
+      ctx2d.arc(lx, ly, 2.5, 0, Math.PI*2);
+      ctx2d.fillStyle = lmColors[i] || '#00d4ff';
+      ctx2d.fill();
+    });
+
+    // Eye gaze lines
+    if (face.landmarks.length >= 2) {
+      const re = face.landmarks[0], le = face.landmarks[1];
+      const rex = overlay.width - re[0], rey = re[1];
+      const lex = overlay.width - le[0], ley = le[1];
+
+      // Eye-to-centre horizontal line
+      const centX = overlay.width / 2, centY = overlay.height / 2;
+      ctx2d.beginPath();
+      ctx2d.moveTo(rex, rey); ctx2d.lineTo(lex, ley);
+      ctx2d.strokeStyle = 'rgba(0,212,255,0.15)';
+      ctx2d.lineWidth = 1; ctx2d.stroke();
+
+      // Vertical midline
+      ctx2d.beginPath();
+      ctx2d.moveTo(centX, y1 - 4); ctx2d.lineTo(centX, y2 + 4);
+      ctx2d.strokeStyle = 'rgba(0,212,255,0.08)';
+      ctx2d.setLineDash([3,5]); ctx2d.stroke(); ctx2d.setLineDash([]);
+    }
+
+    // Compute metrics
+    const eyeScore  = computeEyeContact(face, overlay.width, overlay.height);
+    const tiltAngle = computeTilt(face);
+    const exprClass = computeExpression(face, h);
+    const postState = tiltAngle < 8 ? 'upright' : tiltAngle < 18 ? 'slight' : 'leaning';
+
+    updateMetrics({ eye:eyeScore, conf: Math.round(modelConf * 0.6 + eyeScore * 0.4), expr:exprClass, posture:postState });
+  } else {
+    updateMetrics({ eye:60, conf:modelConf, expr:'neutral', posture:'upright' });
+  }
+}
+
+// ── Metric computations ───────────────────────────────────────
+function computeEyeContact(face, vw, vh) {
+  if (!face.landmarks || face.landmarks.length < 2) return 50;
+  const re = face.landmarks[0], le = face.landmarks[1];
+  // Mirror
+  const rex = vw - re[0], ley_x = vw - le[0];
+  const eyeMidX = (rex + ley_x) / 2;
+  const eyeMidY = (re[1] + le[1]) / 2;
+  const centerX = vw / 2, centerY = vh * 0.42;
+  const dx = Math.abs(eyeMidX - centerX) / (vw * 0.5);
+  const dy = Math.abs(eyeMidY - centerY) / (vh * 0.5);
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  return Math.round(Math.max(0, Math.min(100, (1 - dist * 1.4) * 100)));
+}
+
+function computeTilt(face) {
+  if (!face.landmarks || face.landmarks.length < 2) return 0;
+  const re = face.landmarks[0], le = face.landmarks[1];
+  const dx = le[0] - re[0], dy = le[1] - re[1];
+  return Math.abs(Math.atan2(dy, dx) * 180 / Math.PI);
+}
+
+function computeExpression(face, faceH) {
+  if (!face.landmarks || face.landmarks.length < 4) return 'neutral';
+  const mouth = face.landmarks[3];
+  const nose  = face.landmarks[2];
+  // Heuristic: mouth y relative to nose y, normalised by face height
+  const ratio = (mouth[1] - nose[1]) / Math.max(faceH * 0.5, 1);
+  if (ratio > 0.55) return 'smile';
+  if (ratio < 0.30) return 'tense';
+  return 'neutral';
+}
+
+function drawNoFace() {
+  // Dashed centre reticle
+  ctx2d.strokeStyle = 'rgba(0,212,255,0.08)';
+  ctx2d.lineWidth = 1;
+  ctx2d.setLineDash([4,8]);
+  ctx2d.strokeRect(overlay.width*0.25, overlay.height*0.15, overlay.width*0.5, overlay.height*0.7);
+  ctx2d.setLineDash([]);
+  ctx2d.fillStyle = 'rgba(0,212,255,0.06)';
+  ctx2d.font = '10px Geist Mono, monospace';
+  ctx2d.textAlign = 'center';
+  ctx2d.fillText('Position face in frame', overlay.width/2, overlay.height*0.92);
+}
+
+function drawScanOverlay() {
+  ctx2d.fillStyle = 'rgba(0,212,255,0.03)';
+  ctx2d.fillRect(0, 0, overlay.width, overlay.height);
+  ctx2d.fillStyle = 'rgba(0,212,255,0.08)';
+  ctx2d.font = '10px Geist Mono, monospace';
+  ctx2d.textAlign = 'center';
+  ctx2d.fillText('Loading AI model…', overlay.width/2, overlay.height/2);
+}
+
+// ── Metric updates ────────────────────────────────────────────
+function updateMetrics({ eye, conf, expr, posture }) {
+  totalFrames++;
+  if (expr === 'smile') smileFrames++;
+
+  // EMA smoothing
+  emaEye  = emaEye  * (1-EMA_A) + eye  * EMA_A;
+  emaConf = emaConf * (1-EMA_A) + conf * EMA_A;
+
+  const e = Math.round(emaEye), c = Math.round(emaConf);
+
+  eyeHist.push(e);  if (eyeHist.length > HIST)  eyeHist.shift();
+  confHist.push(c); if (confHist.length > HIST) confHist.shift();
+
+  // Eye badge
+  const eyeColor = e >= 65 ? '#00c896' : e >= 40 ? '#fbbf24' : '#fb2c36';
+  eyeScore.textContent = e + '%';
+  eyeScore.style.color = eyeColor;
+
+  // Confidence ring
+  const CIRC = 138.2;
+  confNum.textContent = c;
+  confNum.style.color = c>=65?'#00c896':c>=40?'#fbbf24':'#fb2c36';
+  const dash = (c/100)*CIRC;
+  confArc.setAttribute('stroke-dasharray', `${dash} ${CIRC}`);
+  confArc.setAttribute('stroke', c>=65?'#00c896':c>=40?'#fbbf24':'#fb2c36');
+
+  // Expression
+  currentExpr = expr;
+  const exInfo = EXPR_THRESHOLDS[expr] || EXPR_THRESHOLDS.neutral;
+  exprIcon.textContent = exInfo.icon;
+  exprText.textContent = exInfo.text;
+  exprText.style.color = exInfo.color;
+
+  // Posture
+  const pInfo = POSTURE[posture] || POSTURE.upright;
+  postureIc.textContent = pInfo.icon;
+  postureT.textContent  = pInfo.text;
+
+  // Coaching (rotate every 6 seconds)
+  coachTimer++;
+  if (coachTimer > fps * 6 || coachTimer === 1) {
+    coachTimer = 0;
+    const match = COACHING.find(c2 => c2.cond(e, c));
+    if (match) { coachIcon.textContent = match.icon; coachText.textContent = match.text; }
+  }
+}
+
+// ── Sparkline ─────────────────────────────────────────────────
+function updateSparkline() {
+  const sw = sparkCv.width  = sparkCv.offsetWidth  || 180;
+  const sh = sparkCv.height = sparkCv.offsetHeight || 22;
+  sparkCtx.clearRect(0, 0, sw, sh);
+
+  if (confHist.length < 2) return;
+  const step = sw / (HIST - 1);
+
+  sparkCtx.beginPath();
+  confHist.forEach((v, i) => {
+    const x = i * step;
+    const y = sh - (v/100) * sh;
+    i === 0 ? sparkCtx.moveTo(x,y) : sparkCtx.lineTo(x,y);
+  });
+  sparkCtx.strokeStyle = 'rgba(0,212,255,0.45)';
+  sparkCtx.lineWidth = 1.5;
+  sparkCtx.stroke();
+
+  // Fill area
+  sparkCtx.lineTo((confHist.length-1)*step, sh);
+  sparkCtx.lineTo(0, sh);
+  sparkCtx.closePath();
+  sparkCtx.fillStyle = 'rgba(0,212,255,0.06)';
+  sparkCtx.fill();
+}
+
+// ── Session stats ─────────────────────────────────────────────
+function updateStats() {
+  if (eyeHist.length === 0) return;
+  const avgEye  = Math.round(eyeHist.reduce((a,b)=>a+b,0)/eyeHist.length);
+  const avgConf = Math.round(confHist.reduce((a,b)=>a+b,0)/confHist.length);
+  const smilePct = totalFrames>0 ? Math.round((smileFrames/totalFrames)*100) : 0;
+
+  statEye.textContent    = avgEye + '%';
+  statConf.textContent   = avgConf;
+  statExpr.textContent   = smilePct + '%';
+  statFrames.textContent = totalFrames;
+
+  statEye.style.color  = avgEye>=65?'#00c896':avgEye>=40?'#fbbf24':'#fb2c36';
+  statConf.style.color = avgConf>=65?'#00c896':avgConf>=40?'#fbbf24':'#fb2c36';
+}
+
+// ── Fallback mode (no camera but demo metrics) ────────────────
+function runFallbackMode() {
+  modePill.textContent = 'No Camera · Demo Mode';
+  let t = 0;
+  setInterval(() => {
+    t++;
+    const e = 40 + Math.round(Math.sin(t*0.15)*25 + Math.random()*10);
+    const c = 50 + Math.round(Math.cos(t*0.1)*20 + Math.random()*8);
+    updateMetrics({ eye:e, conf:c, expr:t%20<3?'smile':'neutral', posture:Math.abs(e-50)>15?'slight':'upright' });
+    updateSparkline(); updateStats();
+  }, 150);
+}
+
+// ── Fake metrics when model loading ───────────────────────────
+let _ft = 0;
+function fakeMetrics() {
+  _ft++;
+  const e = 55 + Math.round(Math.sin(_ft*0.08)*12);
+  updateMetrics({ eye:e, conf:60, expr:'neutral', posture:'upright' });
+}
+
+// ── Snapshot ──────────────────────────────────────────────────
+snapBtn.addEventListener('click', () => {
+  const hc = hiddenCv.getContext('2d');
+  hc.save();
+  hc.scale(-1,1); hc.drawImage(vid, -hiddenCv.width, 0);
+  hc.restore();
+  // Timestamp overlay
+  const now = new Date().toLocaleTimeString();
+  hc.fillStyle = 'rgba(0,0,0,0.55)';
+  hc.fillRect(0, hiddenCv.height-22, hiddenCv.width, 22);
+  hc.fillStyle = 'rgba(0,212,255,0.7)';
+  hc.font = '9px Geist Mono, monospace';
+  hc.fillText('KETU AI · ' + now, 8, hiddenCv.height-8);
+
+  snapImg.src = hiddenCv.toDataURL('image/png');
+  snapTime.textContent = 'Captured at ' + now;
+  snapPrev.style.display = 'block';
+  snapPrev.classList.add('fadein');
+  setTimeout(()=>snapPrev.classList.remove('fadein'), 500);
+});
+
+// ── Boot ──────────────────────────────────────────────────────
+(async () => {
+  await loadModel();
+  await startCam();
+})();
+</script>
+</body>
+</html>
+""", height=570, scrolling=False)
+
 
 # ─────────────────────────────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────────────────────────────
 def render_sidebar():
     with st.sidebar:
-        st.markdown('<div style="font-family:Geist,sans-serif;font-weight:900;font-size:1.7rem;color:#00d4ff;margin-bottom:0.1rem;letter-spacing:-0.04em">KETU AI <span style="font-size:0.7rem;color:#3d5580;letter-spacing:0.2em;font-weight:400">v2.0</span></div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-family:Geist,sans-serif;font-weight:900;font-size:1.7rem;color:#00d4ff;margin-bottom:0.1rem;letter-spacing:-0.04em">KETU AI <span style="font-size:0.7rem;color:#3d5580;letter-spacing:0.2em;font-weight:400">v2.1</span></div>', unsafe_allow_html=True)
         st.markdown('<div style="font-family:Geist Mono,monospace;font-size:0.62rem;color:#1e3258;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:1rem">Elite Interview Intelligence</div>', unsafe_allow_html=True)
         st.markdown("---")
 
@@ -1303,9 +1755,18 @@ def render_sidebar():
             st.markdown("---")
             if st.button("⏹ End Interview", use_container_width=True):
                 st.session_state.screen = "results"; st.rerun()
-            st.session_state.camera_enabled = st.toggle("📷 Camera Monitor", value=st.session_state.get("camera_enabled",False))
+
+            # Camera toggle
+            prev_cam = st.session_state.camera_enabled
+            st.session_state.camera_enabled = st.toggle(
+                "📷 AI Presence Monitor",
+                value=st.session_state.get("camera_enabled", False),
+                help="Enables BlazeFace-powered eye contact, confidence & expression tracking"
+            )
             if st.session_state.camera_enabled:
                 camera_panel()
+            elif prev_cam and not st.session_state.camera_enabled:
+                st.markdown('<div class="tip" style="margin-top:0.5rem">Camera monitoring paused.</div>', unsafe_allow_html=True)
 
         elif screen == "results":
             if st.session_state.scores:
@@ -1318,38 +1779,42 @@ def render_sidebar():
                     st.rerun()
 
         st.markdown("---")
-        st.markdown('<div style="font-family:Geist Mono,monospace;font-size:0.62rem;color:#1e3258;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:0.5rem">Capabilities</div>', unsafe_allow_html=True)
-        for f in [
+        st.markdown('<div style="font-family:Geist Mono,monospace;font-size:0.62rem;color:#1e3258;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:0.5rem">Capabilities v2.1</div>', unsafe_allow_html=True)
+        features = [
             "4 interviewer personas","8 competency frameworks","3 pressure modes",
             "Resume deep analysis","Skills gap detection","Adaptive follow-ups",
             "Live STAR tracking","Filler word analysis","Real-time coaching",
             "Specificity scoring","Competency radar","Score timeline",
             "CSV + JSON export","Whisper voice input","TTS delivery",
-        ]:
+            "BlazeFace AI detection","Eye contact scoring","Expression analysis",
+            "Posture estimation","Confidence sparkline","Snapshot capture",
+        ]
+        for f in features:
             st.markdown(f'<div style="font-family:Geist Mono,monospace;font-size:0.65rem;color:#1e3258;padding:0.15rem 0">· {f}</div>', unsafe_allow_html=True)
 
         st.markdown("---")
         st.caption(datetime.now().strftime("%H:%M · %d %b %Y"))
 
+
 # ─────────────────────────────────────────────────────────────
 # SCREEN — SETUP
 # ─────────────────────────────────────────────────────────────
 def screen_setup():
-    # Hero
     st.markdown("""
     <div class="hero">
         <div style="display:flex;justify-content:center;margin-bottom:2rem">
-            <div class="hero-kicker"><div class="hero-dot"></div>Adaptive · Multi-Persona · Real-Time Intelligence</div>
+            <div class="hero-kicker"><div class="hero-dot"></div>Adaptive · Multi-Persona · AI Presence Analysis</div>
         </div>
         <div class="hero-wordmark">KETU AI</div>
         <div class="hero-sub-title">next-generation interview intelligence</div>
-        <p class="hero-desc">Meet your elite AI interviewer. Adaptive follow-ups, resume analysis, STAR tracking, competency mapping, and feedback that genuinely makes you better.</p>
+        <p class="hero-desc">Meet your elite AI interviewer. Adaptive follow-ups, resume analysis, STAR tracking, competency mapping, live camera presence scoring, and feedback that genuinely makes you better.</p>
         <div class="hero-badges">
             <span class="hero-badge">4 Personas</span>
             <span class="hero-badge">8 Competency Frameworks</span>
             <span class="hero-badge">Live STAR Tracking</span>
             <span class="hero-badge">Resume Intelligence</span>
             <span class="hero-badge">Voice Input</span>
+            <span class="hero-badge">📷 AI Presence Monitor</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1362,7 +1827,6 @@ def screen_setup():
     left, right = st.columns([1.1, 0.9], gap="large")
 
     with left:
-        # ── Persona selector ──
         st.markdown('<div class="glass glass-electric">', unsafe_allow_html=True)
         st.markdown('<div class="sec sec-electric">🎭 Choose Your Interviewer</div>', unsafe_allow_html=True)
         p_cols = st.columns(4)
@@ -1390,7 +1854,6 @@ def screen_setup():
             mode = st.selectbox("Interview Mode", list(INTERVIEW_MODES.keys()), index=list(INTERVIEW_MODES.keys()).index(st.session_state.interview_mode))
             st.session_state.interview_mode = mode
 
-        mode_info = INTERVIEW_MODES[mode]
         st.markdown(f"""<div class="mode-grid" style="margin-top:0.5rem;margin-bottom:1rem">
             {''.join([
                 f'<div class="mode-card {"m-"+m.lower() if st.session_state.interview_mode==m else ""}"><div class="mode-title">{INTERVIEW_MODES[m]["emoji"]} {m}</div><div class="mode-desc">{INTERVIEW_MODES[m]["desc"]}</div><span class="mode-pill {INTERVIEW_MODES[m]["pill_cls"]}">{INTERVIEW_MODES[m]["pressure"].upper()} PRESSURE</span></div>'
@@ -1401,18 +1864,26 @@ def screen_setup():
         st.session_state.jd_text = st.text_area("Job Description *", height=250, placeholder="Paste the full job description here…", value=st.session_state.jd_text)
 
         st.markdown('<div class="sec" style="margin-top:1rem">⚙️ Settings</div>', unsafe_allow_html=True)
-        c3, c4, c5 = st.columns(3)
+        c3, c4, c5, c6 = st.columns(4)
         with c3: st.session_state.num_questions = st.slider("Questions", 4, 15, st.session_state.num_questions)
         with c4: st.session_state.tts_enabled = st.toggle("🔊 Voice TTS", value=st.session_state.tts_enabled)
         with c5: st.session_state.show_hints  = st.toggle("💡 Show Hints", value=st.session_state.show_hints)
+        with c6: st.session_state.camera_enabled = st.toggle("📷 Camera", value=st.session_state.get("camera_enabled", False))
 
-        # Competency preview
         comps = COMPETENCY_FRAMEWORKS.get(cat, [])
         comp_html = "".join([f'<span class="skill-tag sk-neutral">{c}</span>' for c in comps])
         st.markdown(f'<div class="sec" style="margin-top:0.8rem">📊 Competencies to Assess</div><div class="skills-match">{comp_html}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with right:
+        # Camera preview on setup (if enabled)
+        if st.session_state.camera_enabled:
+            st.markdown('<div class="glass" style="padding:1rem;margin-bottom:0.8rem">', unsafe_allow_html=True)
+            st.markdown('<div class="sec sec-electric">📷 AI Presence Monitor — Preview</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-family:Geist Mono,monospace;font-size:0.7rem;color:var(--t3);margin-bottom:0.7rem">BlazeFace · Eye Contact · Expression · Confidence · Posture</div>', unsafe_allow_html=True)
+            camera_panel()
+            st.markdown('</div>', unsafe_allow_html=True)
+
         st.markdown('<div class="glass glass-neon">', unsafe_allow_html=True)
         st.markdown('<div class="sec sec-neon">📄 Resume Upload & Analysis</div>', unsafe_allow_html=True)
 
@@ -1428,7 +1899,6 @@ def screen_setup():
                         if not st.session_state.candidate_name:
                             st.session_state.candidate_name = profile["candidate_name"]
 
-            # Profile card
             profile = st.session_state.resume_profile or {}
             match_html = "".join([f'<span class="skill-tag sk-match">✓ {s}</span>' for s in profile.get("matching_skills",[])[:4]])
             gap_html   = "".join([f'<span class="skill-tag sk-gap">✗ {s}</span>' for s in profile.get("gap_skills",[])[:3]])
@@ -1460,10 +1930,10 @@ def screen_setup():
                 st.text(text[:900] + "…")
         else:
             st.markdown("""
-            <div class="upload-zone">
-                <div class="upload-icon">📄</div>
-                <div class="upload-title">Drop your resume here</div>
-                <div class="upload-hint">PDF · DOCX · TXT · Auto-analysed against JD</div>
+            <div style="border:1px dashed rgba(124,58,237,0.3);border-radius:16px;padding:2rem 1.5rem;text-align:center;background:rgba(124,58,237,0.03)">
+                <div style="font-size:2rem;margin-bottom:0.6rem">📄</div>
+                <div style="font-family:'Geist',sans-serif;font-weight:600;font-size:0.9rem;color:var(--t1)">Drop your resume here</div>
+                <div style="font-family:'Geist Mono',monospace;font-size:0.65rem;color:var(--t3);margin-top:0.3rem">PDF · DOCX · TXT · Auto-analysed against JD</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1471,7 +1941,7 @@ def screen_setup():
 
         st.markdown("""
         <div class="tip" style="margin-top:0.8rem">
-        🧠 KETU AI v2 deep-analyses your resume against the JD before generating questions — identifying skill matches, gaps, and crafting targeted probes that no human interviewer could prepare as fast.
+        🧠 KETU AI v2.1 adds live camera intelligence: TensorFlow.js BlazeFace tracks your eye contact, expression, and posture in real-time — giving you presence coaching alongside answer analysis.
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -1513,6 +1983,7 @@ def screen_setup():
                 st.session_state.screen           = "interview"
                 st.rerun()
 
+
 # ─────────────────────────────────────────────────────────────
 # SCREEN — INTERVIEW
 # ─────────────────────────────────────────────────────────────
@@ -1538,7 +2009,6 @@ def screen_interview():
     q_info     = QUESTION_TYPES.get(q_type, ("❓","qb-tech",q_type.title()))
     diff_cls   = {"easy":"diff-e","medium":"diff-m","hard":"diff-h"}.get(difficulty,"diff-m")
 
-    # ── Top progress bar ──────────────────────────────────────
     elapsed = int(time.time() - (st.session_state.session_start or time.time()))
     mins, secs = divmod(elapsed, 60)
     avg_so_far = (sum(s.get("score",0) for s in st.session_state.scores) / len(st.session_state.scores)) if st.session_state.scores else 0.0
@@ -1558,7 +2028,6 @@ def screen_interview():
 
     st.markdown("---")
 
-    # ── Persona avatar ────────────────────────────────────────
     msg = st.session_state.get("ketu_message","")
     is_followup = st.session_state.get("is_followup", False)
     speaking = "speaking" if msg and not st.session_state.submitted else ""
@@ -1578,7 +2047,6 @@ def screen_interview():
     if msg and tts_key not in st.session_state:
         tts_play(msg); st.session_state[tts_key] = True
 
-    # ── Question card ─────────────────────────────────────────
     if is_followup:
         st.markdown('<div class="followup-strip">🔄 Follow-up — Probing deeper</div>', unsafe_allow_html=True)
 
@@ -1594,12 +2062,10 @@ def screen_interview():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Answer input ──────────────────────────────────────────
     if not st.session_state.submitted:
-        # Voice
         if HAS_AUDIO_RECORDER:
             st.markdown('<div class="sec">🎙️ Voice Answer</div>', unsafe_allow_html=True)
-            st.markdown('<div class="rec-strip"><div class="rec-left"><span class="rec-dot"></span>Click to record · Groq Whisper</div><span style="font-family:\'Geist Mono\',monospace;font-size:0.65rem;color:var(--t4)">Speak clearly</span></div>', unsafe_allow_html=True)
+            st.markdown('<div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 1rem;background:rgba(251,44,54,0.04);border:1px solid rgba(251,44,54,0.15);border-radius:12px;margin-bottom:0.7rem"><div style="display:flex;align-items:center;gap:0.45rem;font-family:\'Geist Mono\',monospace;font-size:0.7rem;color:rgba(251,100,100,0.7)"><span style="width:6px;height:6px;border-radius:50%;background:#fb2c36;animation:blink-led 1s ease infinite;display:inline-block"></span>Click to record · Groq Whisper</div><span style="font-family:\'Geist Mono\',monospace;font-size:0.65rem;color:var(--t4)">Speak clearly</span></div>', unsafe_allow_html=True)
             audio_bytes = audio_recorder(text="", icon_size="2x", key=f"rec_{idx}")
             if audio_bytes and f"tr_{idx}" not in st.session_state:
                 st.markdown(waveform_html(), unsafe_allow_html=True)
@@ -1622,7 +2088,6 @@ def screen_interview():
             label_visibility="collapsed",
         )
 
-        # ── Live coaching ──
         if ans.strip():
             qa = analyze_quality(ans)
             wc = qa["wc"]
@@ -1641,7 +2106,6 @@ def screen_interview():
             hint_cls = {"warn":"coach-warn","success":"coach-success","info":"coach-info"}.get(htype,"coach-info")
             st.markdown(f'<div class="coach-bar {hint_cls}"><span class="coach-icon">{hicon}</span>{htext}</div>', unsafe_allow_html=True)
 
-            # STAR check
             if q_type in ("behavioral","situational") and wc > 30:
                 star = qa["star"]
                 star_cells = "".join([
@@ -1650,7 +2114,6 @@ def screen_interview():
                 ])
                 st.markdown(f'<div style="margin-top:0.6rem"><div class="sec" style="margin-bottom:0.35rem">⭐ STAR Coverage</div><div class="star-grid">{star_cells}</div></div>', unsafe_allow_html=True)
 
-            # Specificity signal
             if qa["specificity"] >= 2:
                 st.markdown(f'<div class="coach-bar coach-success"><span class="coach-icon">📊</span>Good use of specific details and numbers — that strengthens credibility.</div>', unsafe_allow_html=True)
 
@@ -1726,17 +2189,15 @@ def screen_interview():
                 )
                 st.rerun()
 
-    # ── Feedback view ─────────────────────────────────────────
     else:
         f = st.session_state.current_feedback
         sc = f.get("score",5.0)
-        sc_cls = "fb-ring-num score-" + ("high" if sc>=7 else "mid" if sc>=5 else "low")
         sc_color = score_color(sc)
         reaction = f.get("interviewer_reaction","")
         qa_local = f.get("_qa",{})
         tones = f.get("tone_signals",[])
+        q_type = q_types[idx] if idx < len(q_types) else "technical"
 
-        # Persona reaction
         if reaction:
             st.markdown(f"""
             <div class="avatar-bar">
@@ -1752,7 +2213,6 @@ def screen_interview():
             if react_key not in st.session_state:
                 tts_play(reaction); st.session_state[react_key] = True
 
-        # Score + tones
         tone_html = ""
         for t in tones:
             cls = "tc-pos" if t in POSITIVE_TONE else "tc-neg" if t in NEGATIVE_TONE else "tc-neu"
@@ -1779,13 +2239,11 @@ def screen_interview():
         </div>
         """, unsafe_allow_html=True)
 
-        # Ideal hint
         ideal = f.get("ideal_hint","")
         if ideal:
             with st.expander("💡 What a strong answer would have included"):
                 st.markdown(f'<div class="tip neon">{ideal}</div>', unsafe_allow_html=True)
 
-        # Stats row
         if qa_local:
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Words",   f'{qa_local.get("wc",0)}')
@@ -1793,7 +2251,6 @@ def screen_interview():
             c3.metric("STAR",    f'{qa_local.get("star_score",0)}/4')
             c4.metric("Specificity", f'{qa_local.get("specificity",0)}/3')
 
-        # Follow-up
         pending = st.session_state.get("_pending_followup", False)
         fq      = f.get("followup_question","")
         if pending and fq:
@@ -1833,8 +2290,9 @@ def screen_interview():
                 st.session_state.q_start = time.time()
                 st.rerun()
 
+
 # ─────────────────────────────────────────────────────────────
-# SCREEN — RESULTS (tabbed)
+# SCREEN — RESULTS
 # ─────────────────────────────────────────────────────────────
 def screen_results():
     llm           = get_llm()
@@ -1866,7 +2324,6 @@ def screen_results():
     avg_star      = sum(star_scores) / max(len(star_scores),1)
     filler_pct    = (total_fillers / max(total_words,1)) * 100
 
-    # ── Hero ──────────────────────────────────────────────────
     st.markdown(f"""
     <div class="result-hero">
         <div class="hero-kicker"><div class="hero-dot"></div>{name} · {role} · {mode} Mode · {persona['name']}</div>
@@ -1876,7 +2333,6 @@ def screen_results():
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Top metrics ───────────────────────────────────────────
     m1,m2,m3,m4,m5,m6,m7 = st.columns(7)
     m1.metric("Score",   f"{avg:.1f}/10")
     m2.metric("Answered",f"{len(scores)}/{n_total}")
@@ -1888,13 +2344,11 @@ def screen_results():
 
     st.markdown("---")
 
-    # ── Tabs ──────────────────────────────────────────────────
     tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Analytics", "📋 Breakdown", "🤖 AI Assessment", "📄 Resume Profile", "⬇️ Export"])
 
     with tab1:
         col_l, col_r = st.columns([1.2, 0.8], gap="large")
         with col_l:
-            # Score timeline
             if len(scores) >= 2:
                 st.markdown('<div class="sec">📈 Score Timeline</div>', unsafe_allow_html=True)
                 vals = [s.get("score",0) for s in scores]
@@ -1912,7 +2366,6 @@ def screen_results():
                 fig_line.update_layout(**{**PLOTLY,"height":240,"showlegend":False,"yaxis":{**PLOTLY.get("yaxis",{}),"range":[0,10.5]}})
                 st.plotly_chart(fig_line, use_container_width=True, config={"displayModeBar":False})
 
-            # Word count bar
             if st.session_state.word_counts and len(st.session_state.word_counts) >= 2:
                 st.markdown('<div class="sec">📝 Words per Answer</div>', unsafe_allow_html=True)
                 wc_v = st.session_state.word_counts
@@ -1928,7 +2381,6 @@ def screen_results():
                 fig_wc.update_layout(**PLOTLY, height=180, showlegend=False)
                 st.plotly_chart(fig_wc, use_container_width=True, config={"displayModeBar":False})
 
-            # Competency bar chart
             comp_agg = {k: sum(v)/len(v) for k,v in st.session_state.competency_scores.items() if v}
             if comp_agg:
                 st.markdown('<div class="sec">🏆 Competency Scores</div>', unsafe_allow_html=True)
@@ -1947,7 +2399,6 @@ def screen_results():
                 st.plotly_chart(fig_comp, use_container_width=True, config={"displayModeBar":False})
 
         with col_r:
-            # Competency radar
             if len(comp_agg) >= 3:
                 st.markdown('<div class="sec">🕸️ Competency Radar</div>', unsafe_allow_html=True)
                 cats_r = list(comp_agg.keys()); vals_r = list(comp_agg.values())
@@ -1963,7 +2414,6 @@ def screen_results():
                 ),"height":300})
                 st.plotly_chart(fig_rad, use_container_width=True, config={"displayModeBar":False})
 
-            # Score distribution
             st.markdown('<div class="sec">📊 Score Distribution</div>', unsafe_allow_html=True)
             bins = {"0-4":0,"5-6":0,"7-8":0,"9-10":0}
             for s in scores:
@@ -1981,7 +2431,6 @@ def screen_results():
             fig_dist.update_layout(**PLOTLY, height=200, showlegend=False)
             st.plotly_chart(fig_dist, use_container_width=True, config={"displayModeBar":False})
 
-            # Type distribution
             type_counts = Counter(item.get("type","technical") for item in feedback_list)
             if type_counts:
                 st.markdown('<div class="sec">🏷️ Question Type Distribution</div>', unsafe_allow_html=True)
@@ -1997,7 +2446,6 @@ def screen_results():
                     "legend":dict(font=dict(family="Geist Mono",size=9,color="#3d5580"),bgcolor="rgba(0,0,0,0)")})
                 st.plotly_chart(fig_type, use_container_width=True, config={"displayModeBar":False})
 
-            # Communication stats
             st.markdown('<div class="sec">🎙️ Communication Quality</div>', unsafe_allow_html=True)
             fp_color = "#00c896" if filler_pct<3 else "#fbbf24" if filler_pct<6 else "#fb2c36"
             fp_label = "Excellent" if filler_pct<3 else "Acceptable" if filler_pct<6 else "Needs work"
@@ -2063,7 +2511,6 @@ def screen_results():
                     ideal = item["eval"].get("ideal_hint","")
                     if ideal:
                         st.markdown(f'<div class="tip neon">💡 {ideal}</div>', unsafe_allow_html=True)
-                # STAR
                 qa_d = item.get("qa",{})
                 if qa_d.get("star") and item.get("type") in ("behavioral","situational"):
                     star_cells = "".join([
@@ -2121,7 +2568,7 @@ def screen_results():
 
             if profile.get("red_flags"):
                 st.markdown("<br>", unsafe_allow_html=True)
-                st.warning("⚠️ Potential concerns noted during analysis: " + " · ".join(profile["red_flags"]))
+                st.warning("⚠️ Potential concerns: " + " · ".join(profile["red_flags"]))
             st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.info("Resume profile analysis was not run (JD not pasted before upload, or LLM call failed).")
@@ -2131,11 +2578,11 @@ def screen_results():
         c1, c2, c3, c4, c5 = st.columns(5)
         with c1:
             st.download_button("📦 JSON Report", data=build_json(st.session_state),
-                file_name=f"ketu_v2_{name.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                file_name=f"ketu_v2_1_{name.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
                 mime="application/json", use_container_width=True)
         with c2:
             st.download_button("📊 CSV Export", data=build_csv(st.session_state),
-                file_name=f"ketu_v2_{name.replace(' ','_')}.csv",
+                file_name=f"ketu_v2_1_{name.replace(' ','_')}.csv",
                 mime="text/csv", use_container_width=True)
         with c3:
             if st.button("🔄 New Interview", use_container_width=True):
@@ -2160,17 +2607,18 @@ def screen_results():
             <div class="export-icon">📦</div>
             <div>
                 <div class="export-title">Full Interview Report (JSON)</div>
-                <div class="export-desc">Includes metadata, per-question scores, AI assessment, competency breakdown, STAR analysis, communication stats, and resume profile.</div>
+                <div class="export-desc">Includes metadata, per-question scores, AI assessment, competency breakdown, STAR analysis, communication stats, resume profile, and camera analytics.</div>
             </div>
         </div>
         <div class="export-block" style="margin-top:0.5rem">
             <div class="export-icon">📊</div>
             <div>
                 <div class="export-title">Tabular Export (CSV)</div>
-                <div class="export-desc">Question-by-question breakdown in spreadsheet format — perfect for tracking progress across sessions.</div>
+                <div class="export-desc">Question-by-question breakdown — perfect for tracking progress across sessions.</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
+
 
 # ─────────────────────────────────────────────────────────────
 # ROUTER
