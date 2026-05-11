@@ -650,7 +650,7 @@ def tts_play(text: str):
         return
     try:
         buf = BytesIO()
-        gTTS(text=text[:500], lang="en", slow=False).write_to_fp(buf)
+        gTTS(text=text[:50000], lang="en", slow=False).write_to_fp(buf)
         buf.seek(0)
         b64 = base64.b64encode(buf.read()).decode()
         st.markdown(f'<audio autoplay style="display:none"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>', unsafe_allow_html=True)
