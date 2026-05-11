@@ -1865,7 +1865,7 @@ def screen_setup():
 
         st.markdown('<div class="sec" style="margin-top:1rem">⚙️ Settings</div>', unsafe_allow_html=True)
         c3, c4, c5, c6 = st.columns(4)
-        with c3: st.session_state.num_questions = st.slider("Questions", 4, 15, st.session_state.num_questions)
+        with c3: st.session_state.num_questions = st.slider("Questions", 3, 15, st.session_state.num_questions)
         with c4: st.session_state.tts_enabled = st.toggle("🔊 Voice TTS", value=st.session_state.tts_enabled)
         with c5: st.session_state.show_hints  = st.toggle("💡 Show Hints", value=st.session_state.show_hints)
         with c6: st.session_state.camera_enabled = st.toggle("📷 Camera", value=st.session_state.get("camera_enabled", False))
