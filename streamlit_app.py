@@ -2101,7 +2101,7 @@ def screen_results():
                     textposition="outside", textfont=dict(size=10, color="#8a9fc4"),
                 ))
                 fig_comp.update_layout(**PLOTLY_BASE, height=max(180, len(sorted_c)*36),
-                    showlegend=False, xaxis=dict(range=[0, 11]))
+                       showlegend=False, xaxis=dict(range=[0, 11]))
                 st.plotly_chart(fig_comp, use_container_width=True, config={"displayModeBar": False})
 
         with col_r:
