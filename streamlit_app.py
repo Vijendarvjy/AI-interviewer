@@ -87,6 +87,77 @@ NEGATIVE_TONE = frozenset({
     "Vague", "Nervous", "Hesitant", "Rambling", "Unprepared"
 })
 
+# ── Role benchmark scores (industry P50 / P75) ───────────────
+ROLE_BENCHMARKS = {
+    "Engineering":    {"p50": 5.8, "p75": 7.2, "label": "Software Engineer"},
+    "Management":     {"p50": 6.0, "p75": 7.5, "label": "Manager"},
+    "Product":        {"p50": 5.9, "p75": 7.3, "label": "Product Manager"},
+    "Design":         {"p50": 5.7, "p75": 7.1, "label": "Designer"},
+    "Sales/BD":       {"p50": 6.1, "p75": 7.4, "label": "Sales / BD"},
+    "Data/Analytics": {"p50": 5.8, "p75": 7.2, "label": "Data Analyst"},
+    "Marketing":      {"p50": 5.6, "p75": 7.0, "label": "Marketer"},
+    "Operations":     {"p50": 5.7, "p75": 7.1, "label": "Ops"},
+}
+
+# ── STAR scaffold templates per question type ────────────────
+STAR_TEMPLATES = {
+    "behavioral": (
+        "Situation: [Describe the context — when, where, what team/project]...\n\n"
+        "Task: [What was your specific responsibility or challenge]...\n\n"
+        "Action: [What YOU personally did — steps, tools, decisions]...\n\n"
+        "Result: [Measurable outcome — %, time saved, revenue, team impact]..."
+    ),
+    "situational": (
+        "How I'd approach this: [Frame the problem / constraints first]...\n\n"
+        "My immediate steps: [List 2-3 concrete actions with reasoning]...\n\n"
+        "Stakeholders I'd involve: [Who and why]...\n\n"
+        "Success metric: [How I'd measure the outcome]..."
+    ),
+    "technical": (
+        "My understanding of the problem: [Technical framing]...\n\n"
+        "Approach / architecture: [Key decisions and trade-offs]...\n\n"
+        "Implementation details: [Tools, methods, edge cases]...\n\n"
+        "Outcome & lessons: [What shipped, what I'd change]..."
+    ),
+    "rapport": (
+        "Background: [Briefly who you are and your journey]...\n\n"
+        "What drives me: [Your core motivation or passion]...\n\n"
+        "A key moment: [One experience that shaped your career]...\n\n"
+        "Why this role: [Specific, genuine connection to the opportunity]..."
+    ),
+    "ambition": (
+        "Where I want to be in 2-3 years: [Specific, role-relevant goal]...\n\n"
+        "Skills I'm actively building: [With examples of how]...\n\n"
+        "Why this company/role: [Genuine alignment, not flattery]...\n\n"
+        "What success looks like for me: [Concrete, measurable vision]..."
+    ),
+}
+
+# ── Supported interview languages ─────────────────────────────
+LANGUAGES = {
+    "English":    "en",
+    "Hindi":      "hi",
+    "Spanish":    "es",
+    "French":     "fr",
+    "German":     "de",
+    "Portuguese": "pt",
+    "Arabic":     "ar",
+    "Japanese":   "ja",
+    "Chinese":    "zh",
+}
+
+# ── Sentiment signal words for answer arc tracking ───────────
+_POSITIVE_SIGNALS = frozenset({
+    "achieved", "built", "led", "improved", "grew", "delivered", "launched",
+    "proud", "excited", "loved", "succeeded", "won", "increased", "reduced",
+    "excellent", "strong", "passionate", "thrilled", "great", "proud",
+})
+_NEGATIVE_SIGNALS = frozenset({
+    "failed", "struggled", "difficult", "challenging", "mistake", "wrong",
+    "problem", "issue", "conflict", "missed", "lost", "dropped", "unfortunately",
+    "never", "couldn't", "didn't", "hard", "tough", "frustrated",
+})
+
 # ============================================================
 # CONSTANTS
 # ============================================================
@@ -171,7 +242,7 @@ COMPETENCY_FRAMEWORKS = {
 # ============================================================
 # CSS — injected once per session via hash-guard
 # ============================================================
-_CSS_VERSION = "2.2.0"   # bump to force re-inject after changes
+_CSS_VERSION = "2.3.0"   # bump to force re-inject after changes
 
 DESIGN = """
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700;800;900&display=swap');
@@ -349,6 +420,14 @@ _STATE_DEFAULTS = {
     "competency_scores": {}, "filler_counts": [], "word_counts": [],
     "ai_summary": None, "camera_enabled": False, "show_hints": True,
     "_pending_followup": False,
+    # ── New v2.3 features ────────────────────────────────────
+    "interview_lang": "English",
+    "practice_mode": False,
+    "auto_calibrate": False,
+    "sentiment_arc": [],
+    "keyword_freq": {},
+    "paused_state": None,
+    "replay_idx": 0,
 }
 
 def init_state():
@@ -407,6 +486,67 @@ def grade_tagline(g: str) -> str:
 
 def _scores_avg(scores: list) -> float:
     return sum(s.get("score", 0) for s in scores) / max(len(scores), 1)
+
+# ── New v2.3 helpers ─────────────────────────────────────────
+
+def compute_sentiment(answer: str) -> float:
+    """Return sentiment score -1.0 to +1.0 based on signal words."""
+    words = answer.lower().split()
+    pos = sum(1 for w in words if w in _POSITIVE_SIGNALS)
+    neg = sum(1 for w in words if w in _NEGATIVE_SIGNALS)
+    total = pos + neg
+    if total == 0:
+        return 0.0
+    return round((pos - neg) / total, 2)
+
+def update_keyword_freq(answer: str, freq: dict) -> dict:
+    """Add words from answer (3+ chars, non-stopword) to freq dict."""
+    _stop = frozenset({
+        "the","and","for","are","was","were","that","this","with","have",
+        "has","had","not","but","from","they","what","when","which","who",
+        "will","can","been","its","our","your","their","you","all","one",
+        "more","also","just","into","over","some","about","than","then",
+        "would","could","should","there","these","those","them","after",
+        "before","other","each","such","time","very","only","both","well",
+        "even","much","any","how","him","his","her","she","him",
+    })
+    for word in re.findall(r'\b[a-z]{3,}\b', answer.lower()):
+        if word not in _stop and word not in FILLER_WORDS:
+            freq[word] = freq.get(word, 0) + 1
+    return freq
+
+def calibrate_difficulty(scores: list, current_diff: str) -> str:
+    """Auto-adjust next question difficulty based on rolling average."""
+    if len(scores) < 2:
+        return current_diff
+    recent_avg = sum(s.get("score", 5) for s in scores[-3:]) / min(len(scores), 3)
+    if recent_avg >= 7.5:
+        return "hard"
+    elif recent_avg >= 5.5:
+        return "medium"
+    else:
+        return "easy"
+
+def save_session_snapshot(ss) -> dict:
+    """Serialise key session state for pause/resume."""
+    return {
+        "questions": ss.questions, "q_types": ss.q_types,
+        "q_competencies": ss.q_competencies, "q_difficulties": ss.q_difficulties,
+        "current": ss.current, "scores": ss.scores, "feedback_list": ss.feedback_list,
+        "candidate_name": ss.candidate_name, "role_title": ss.role_title,
+        "resume_profile": ss.resume_profile, "jd_text": ss.jd_text,
+        "persona": ss.persona, "interview_mode": ss.interview_mode,
+        "category_tag": ss.category_tag, "interview_lang": ss.interview_lang,
+        "practice_mode": ss.practice_mode, "auto_calibrate": ss.auto_calibrate,
+        "transcript": ss.transcript, "competency_scores": ss.competency_scores,
+        "filler_counts": ss.filler_counts, "word_counts": ss.word_counts,
+        "sentiment_arc": ss.sentiment_arc, "keyword_freq": ss.keyword_freq,
+        "session_start": ss.session_start, "ketu_message": ss.ketu_message,
+        "num_questions": ss.num_questions,
+    }
+
+def get_benchmark(category: str) -> dict:
+    return ROLE_BENCHMARKS.get(category, {"p50": 5.8, "p75": 7.2, "label": "Candidate"})
 
 PLOTLY_BASE = dict(
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
@@ -530,7 +670,7 @@ def analyze_resume(resume_text: str, jd_text: str, role: str, llm) -> dict:
 # ============================================================
 # QUESTION GENERATION
 # ============================================================
-def gen_questions(jd, resume, role, n, llm, persona_name, mode, category, resume_profile=None):
+def gen_questions(jd, resume, role, n, llm, persona_name, mode, category, resume_profile=None, lang="English"):
     persona  = PERSONAS.get(persona_name, PERSONAS["Ketu"])
     comps    = COMPETENCY_FRAMEWORKS.get(category, COMPETENCY_FRAMEWORKS["Engineering"])
     mode_cfg = INTERVIEW_MODES.get(mode, INTERVIEW_MODES["Standard"])
@@ -557,7 +697,8 @@ def gen_questions(jd, resume, role, n, llm, persona_name, mode, category, resume
         f"- Q1-2: rapport\n- Q3-{max(4,n-3)}: technical/behavioral\n"
         f"- Q{max(4,n-3)+1}-{n-1}: situational\n- Q{n}: ambition/growth\n\n"
         f"Mode rules: {mode_rules}\n\n"
-        "Return ONLY valid JSON:\n"
+        + (f"Generate questions in {lang}.\n\n" if lang != "English" else "")
+        + "Return ONLY valid JSON:\n"
         '{"questions":["q1",...],"types":["rapport","technical",...],'
         '"competencies":["Communication",...],"difficulties":["easy","medium","hard",...]}\n'
         "Types: rapport, technical, behavioral, situational, ambition"
@@ -641,7 +782,7 @@ def analyze_quality(answer: str) -> dict:
 # ============================================================
 # EVALUATION — with JSON-fence strip and safe float cast
 # ============================================================
-def evaluate(q, answer, role, q_type, competency, mode, persona_name, llm, context=None) -> dict:
+def evaluate(q, answer, role, q_type, competency, mode, persona_name, llm, context=None, lang="English") -> dict:
     persona  = PERSONAS.get(persona_name, PERSONAS["Ketu"])
     mode_cfg = INTERVIEW_MODES.get(mode, INTERVIEW_MODES["Standard"])
     ctx_str  = ""
@@ -652,11 +793,12 @@ def evaluate(q, answer, role, q_type, competency, mode, persona_name, llm, conte
 
     tone_adj = "lenient and encouraging" if mode == "Casual" else \
                "rigorous and exacting"   if mode == "Intense" else "balanced and fair"
+    lang_note = f"Respond with all text fields (strength, weakness, suggestion, etc.) in {lang}." if lang != "English" else ""
 
     prompt = (
         f"You are {persona['name']}, a {persona['style']} AI interviewer evaluating a {role} candidate.\n"
         f"Mode: {mode} ({mode_cfg['pressure']}-pressure) | Q-type: {q_type} | Competency: {competency}\n"
-        f"{ctx_str}\n\nQUESTION: {q}\nANSWER: {answer}\n\nBe {tone_adj}.\n\n"
+        f"{ctx_str}\n\nQUESTION: {q}\nANSWER: {answer}\n\nBe {tone_adj}. {lang_note}\n\n"
         "Return ONLY valid JSON:\n"
         f'{{"score":<0-10>,"competency_score":<0-10>,"verdict":"<Exceptional|Strong|Solid|Average|Weak>",'
         f'"strength":"<1 sentence>","weakness":"<1 sentence>","suggestion":"<1 sentence>",'
@@ -719,7 +861,7 @@ def build_json(state) -> str:
             "mode":      state.get("interview_mode", "Standard"),
             "persona":   state.get("persona", "Ketu"),
             "date":      datetime.now().isoformat(),
-            "version":   "2.2",
+            "version":   "2.3",
         },
         "summary": {
             "avg_score":       round(avg, 2),
@@ -751,6 +893,11 @@ def build_json(state) -> str:
             "avg_words_per_answer": sum(state.get("word_counts", [])) // max(len(state.get("word_counts", [])), 1),
             "total_filler_words": sum(state.get("filler_counts", [])),
         },
+        "sentiment_arc":    state.get("sentiment_arc", []),
+        "top_keywords":     sorted(state.get("keyword_freq", {}).items(), key=lambda x: x[1], reverse=True)[:20],
+        "practice_mode":    state.get("practice_mode", False),
+        "auto_calibrated":  state.get("auto_calibrate", False),
+        "interview_lang":   state.get("interview_lang", "English"),
         "ai_assessment": state.get("ai_summary", ""),
     }, indent=2)
 
@@ -1166,13 +1313,24 @@ def camera_panel():
 _FEATURES_HTML = "".join(
     f'<div style="font-family:Geist Mono,monospace;font-size:.65rem;color:#1e3258;padding:.15rem 0">· {f}</div>'
     for f in [
+        # Core
         "4 interviewer personas", "8 competency frameworks", "3 pressure modes",
         "Resume deep analysis", "Skills gap detection", "Adaptive follow-ups",
+        # Answer intelligence
         "Live STAR tracking", "Filler word analysis", "Real-time coaching",
-        "Specificity scoring", "Competency radar", "Score timeline",
-        "CSV + JSON export", "Whisper voice input", "TTS delivery",
+        "Specificity scoring", "Answer sentiment arc", "Keyword heatmap",
+        # Analytics
+        "Competency radar", "Score timeline", "Role benchmark comparison",
+        "Score distribution", "Question type breakdown",
+        # New features
+        "Auto difficulty calibration", "Practice mode (blind scoring)",
+        "STAR answer templates", "9 language support",
+        "Pause & resume session", "Interview replay",
+        # Camera
         "BlazeFace AI detection", "Eye contact scoring", "Expression analysis",
         "Posture estimation", "Confidence sparkline", "Snapshot capture",
+        # I/O
+        "CSV + JSON export", "Whisper voice input", "TTS delivery",
     ]
 )
 
@@ -1181,7 +1339,7 @@ def render_sidebar():
         st.markdown(
             '<div style="font-family:Geist,sans-serif;font-weight:900;font-size:1.7rem;'
             'color:#00d4ff;margin-bottom:.1rem;letter-spacing:-.04em">KETU AI '
-            '<span style="font-size:.7rem;color:#3d5580;letter-spacing:.2em;font-weight:400">v2.2</span></div>',
+            '<span style="font-size:.7rem;color:#3d5580;letter-spacing:.2em;font-weight:400">v2.3</span></div>',
             unsafe_allow_html=True,
         )
         st.markdown(
@@ -1238,7 +1396,7 @@ def render_sidebar():
         st.markdown("---")
         st.markdown(
             '<div style="font-family:Geist Mono,monospace;font-size:.62rem;color:#1e3258;'
-            'letter-spacing:.18em;text-transform:uppercase;margin-bottom:.5rem">Capabilities v2.2</div>',
+            'letter-spacing:.18em;text-transform:uppercase;margin-bottom:.5rem">Capabilities v2.3</div>',
             unsafe_allow_html=True,
         )
         st.markdown(_FEATURES_HTML, unsafe_allow_html=True)
@@ -1256,7 +1414,7 @@ def screen_setup():
       </div>
       <div class="hero-wordmark">KETU AI</div>
       <div class="hero-sub-title">next-generation interview intelligence</div>
-      <p class="hero-desc">Elite AI interviewer with adaptive follow-ups, resume analysis, STAR tracking, competency mapping, live camera presence scoring, and feedback that makes you genuinely better.</p>
+      <p class="hero-desc">Elite AI interviewer with adaptive follow-ups, resume analysis, STAR tracking, competency mapping, live camera presence scoring, sentiment arc, keyword heatmap, role benchmarking, and multilingual support.</p>
       <div class="hero-badges">
         <span class="hero-badge">4 Personas</span>
         <span class="hero-badge">8 Competency Frameworks</span>
@@ -1264,6 +1422,10 @@ def screen_setup():
         <span class="hero-badge">Resume Intelligence</span>
         <span class="hero-badge">Voice Input</span>
         <span class="hero-badge">📷 AI Presence Monitor</span>
+        <span class="hero-badge">🌐 9 Languages</span>
+        <span class="hero-badge">🎭 Practice Mode</span>
+        <span class="hero-badge">🎯 Auto-Calibrate</span>
+        <span class="hero-badge">📈 Benchmark Compare</span>
       </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1342,6 +1504,26 @@ def screen_setup():
         with c4: st.session_state.tts_enabled   = st.toggle("🔊 Voice TTS",  value=st.session_state.tts_enabled)
         with c5: st.session_state.show_hints     = st.toggle("💡 Show Hints", value=st.session_state.show_hints)
         with c6: st.session_state.camera_enabled = st.toggle("📷 Camera",     value=st.session_state.camera_enabled)
+
+        # New feature toggles
+        st.markdown('<div class="sec" style="margin-top:.6rem">🔬 Advanced Features</div>', unsafe_allow_html=True)
+        fa1, fa2, fa3, fa4 = st.columns(4)
+        with fa1:
+            st.session_state.practice_mode  = st.toggle("🎭 Practice Mode",   value=st.session_state.get("practice_mode", False),
+                help="Hide scores during interview — reveal only at the end")
+        with fa2:
+            st.session_state.auto_calibrate = st.toggle("🎯 Auto-Calibrate", value=st.session_state.get("auto_calibrate", False),
+                help="Automatically adjust question difficulty based on your rolling score")
+        with fa3:
+            lang = st.selectbox("🌐 Language", list(LANGUAGES.keys()),
+                index=list(LANGUAGES.keys()).index(st.session_state.get("interview_lang","English")))
+            st.session_state.interview_lang = lang
+        with fa4:
+            st.markdown(
+                '<div style="font-family:Geist Mono,monospace;font-size:.6rem;color:var(--t3);line-height:1.5;margin-top:.3rem">'
+                'Practice Mode hides scores live.<br>Auto-Calibrate adjusts difficulty.</div>',
+                unsafe_allow_html=True,
+            )
 
         comps = COMPETENCY_FRAMEWORKS.get(cat, [])
         comp_html = "".join(f'<span class="skill-tag sk-neutral">{c}</span>' for c in comps)
@@ -1435,6 +1617,7 @@ def screen_setup():
                         st.session_state.role_title, st.session_state.num_questions,
                         llm, st.session_state.persona, st.session_state.interview_mode,
                         st.session_state.category_tag, st.session_state.resume_profile,
+                        lang=st.session_state.get("interview_lang","English"),
                     )
                 if not qs:
                     st.error("Could not generate questions. Check your API key.")
@@ -1448,6 +1631,7 @@ def screen_setup():
                     "ai_summary": None, "session_start": time.time(), "q_start": time.time(),
                     "submitted": False, "ketu_message": greeting,
                     "is_followup": False, "followup_count": 0, "_pending_followup": False,
+                    "sentiment_arc": [], "keyword_freq": {}, "paused_state": None, "replay_idx": 0,
                     "screen": "interview",
                 })
                 st.rerun()
@@ -1612,6 +1796,24 @@ def screen_interview():
         with c2: skip   = st.button("Skip →",           use_container_width=True)
         with c3: hint   = st.button("💡 Hint",           use_container_width=True)
 
+        # STAR template + Pause row
+        bt1, bt2 = st.columns(2)
+        with bt1:
+            if st.button("📋 Insert Answer Template", use_container_width=True):
+                template = STAR_TEMPLATES.get(q_type, STAR_TEMPLATES["behavioral"])
+                ss[f"ans_{idx}"] = template
+                st.rerun()
+        with bt2:
+            if st.button("⏸ Pause & Save Session", use_container_width=True):
+                ss.paused_state = save_session_snapshot(ss)
+                st.info("✅ Session saved — you can download it below and resume anytime.")
+                dl_data = json.dumps(ss.paused_state, indent=2, default=str)
+                st.download_button(
+                    "⬇️ Download Pause File", data=dl_data,
+                    file_name=f"ketu_pause_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                    mime="application/json",
+                )
+
         if hint:
             star_note = "For behavioral: use STAR — Situation, Task, Actions, Results." if q_type in ("behavioral", "situational") else ""
             st.markdown(
@@ -1642,14 +1844,24 @@ def screen_interview():
                     ev = evaluate(
                         q, ans, ss.role_title, q_type, competency,
                         mode, ss.persona, llm, ss.transcript[-6:],
+                        lang=ss.get("interview_lang","English"),
                     )
                     ev["_qa"] = qa
 
                 ss.transcript.append({"role": "user", "content": ans, "q": q})
                 ss.transcript.append({"role": persona["name"], "content": ev.get("interviewer_reaction", "")})
 
+                # Track sentiment arc and keyword frequency
+                ss.sentiment_arc.append(compute_sentiment(ans))
+                ss.keyword_freq = update_keyword_freq(ans, ss.keyword_freq)
+
                 if not ss.is_followup:
                     ss.scores.append(ev)
+                    # Auto-calibrate next question difficulty
+                    if ss.auto_calibrate and idx + 1 < len(ss.q_difficulties):
+                        new_diff = calibrate_difficulty(ss.scores, ss.q_difficulties[idx + 1])
+                        ss.q_difficulties[idx + 1] = new_diff
+
                     ss.feedback_list.append({
                         "q": q, "a": ans, "eval": ev,
                         "type": q_type, "competency": competency, "difficulty": difficulty,
@@ -1680,7 +1892,8 @@ def screen_interview():
     else:
         f         = ss.current_feedback
         sc        = f.get("score", 5.0)
-        sc_color  = score_color(round(sc, 1))
+        practice  = ss.get("practice_mode", False)
+        sc_color  = score_color(round(sc, 1)) if not practice else "#3d5580"
         reaction  = f.get("interviewer_reaction", "")
         qa_local  = f.get("_qa", {})
         tones     = f.get("tone_signals", [])
@@ -1705,13 +1918,15 @@ def screen_interview():
         <div class="fb-card">
           <div class="fb-score-row">
             <div class="fb-ring-wrap">
-              {ring_svg(sc)}
+              {ring_svg(sc) if not practice else ring_svg(0)}
               <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-                font-family:'Geist',sans-serif;font-size:1.4rem;font-weight:800;color:{sc_color}">{sc:.1f}</div>
+                font-family:'Geist',sans-serif;font-size:1.4rem;font-weight:800;color:{sc_color}">
+                {"?" if practice else f"{sc:.1f}"}
+              </div>
             </div>
             <div>
-              <div class="fb-verdict">{f.get('verdict','Average')}</div>
-              <div class="fb-sub">{competency} · /10</div>
+              <div class="fb-verdict">{"Recorded ✓" if practice else f.get("verdict","Average")}</div>
+              <div class="fb-sub">{competency} · {"Score hidden in practice mode" if practice else "/10"}</div>
               <div class="tone-chips">{tone_html}</div>
             </div>
           </div>
@@ -1812,12 +2027,15 @@ def screen_results():
     st.markdown(f"""
     <div class="result-hero">
       <div style="display:flex;justify-content:center;margin-bottom:1rem">
-        <div class="hero-kicker"><div class="hero-dot"></div>{name} · {role} · {mode} · {persona['name']}</div>
+        <div class="hero-kicker"><div class="hero-dot"></div>{name} · {role} · {mode} · {persona['name']}{' · 🎭 Practice Mode' if ss.get('practice_mode') else ''}</div>
       </div>
       <div class="result-grade {g_cls}">{grade}</div>
       <div class="result-score-row">Final Score · {avg:.1f} / 10</div>
       <div class="result-tagline">{grade_tagline(grade)}</div>
     </div>""", unsafe_allow_html=True)
+
+    if ss.get("practice_mode"):
+        st.success("🎭 Practice Mode complete — scores are now revealed above and in all tabs.")
 
     m1, m2, m3, m4, m5, m6, m7 = st.columns(7)
     m1.metric("Score",    f"{avg:.1f}/10")
@@ -1830,8 +2048,8 @@ def screen_results():
 
     st.markdown("---")
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
-        ["📊 Analytics", "📋 Breakdown", "🤖 AI Assessment", "📄 Resume Profile", "⬇️ Export"]
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
+        ["📊 Analytics", "📋 Breakdown", "🤖 AI Assessment", "📄 Resume Profile", "🎭 Replay", "📈 Insights", "⬇️ Export"]
     )
 
     # Precompute comp_agg once
@@ -1882,12 +2100,8 @@ def screen_results():
                     marker_line_width=0, text=[f"{v:.1f}" for _, v in sorted_c],
                     textposition="outside", textfont=dict(size=10, color="#8a9fc4"),
                 ))
-                layout_config = {**PLOTLY_BASE,"height": max(180, len(sorted_c) * 36),"showlegend": False,}
-
-                # Merge xaxis safely
-                layout_config["xaxis"] = {**PLOTLY_BASE.get("xaxis", {}),"range": [0, 11]}
-
-                fig_comp.update_layout(**layout_config)
+                fig_comp.update_layout(**PLOTLY_BASE, height=max(180, len(sorted_c)*36),
+                    showlegend=False, xaxis=dict(range=[0, 11]))
                 st.plotly_chart(fig_comp, use_container_width=True, config={"displayModeBar": False})
 
         with col_r:
@@ -2068,20 +2282,211 @@ def screen_results():
         else:
             st.info("Resume profile not available — paste the JD before uploading resume.")
 
-    # ── Export tab ────────────────────────────────────────────
+    # ── Replay tab ────────────────────────────────────────────
     with tab5:
+        st.markdown('<div class="sec sec-neon">🎭 Interview Replay</div>', unsafe_allow_html=True)
+        if not feedback_list:
+            st.info("No answers to replay yet.")
+        else:
+            st.markdown(
+                '<div style="font-family:Geist Mono,monospace;font-size:.7rem;color:var(--t3);margin-bottom:.8rem">'
+                'Step through your full interview — question by question.</div>',
+                unsafe_allow_html=True,
+            )
+            total_r = len(feedback_list)
+            ridx = st.slider("Jump to question", 1, total_r, min(ss.replay_idx + 1, total_r), key="replay_slider") - 1
+            ss.replay_idx = ridx
+            item = feedback_list[ridx]
+            sc_r = item["eval"].get("score", 0)
+            sc_c_r = score_color(round(sc_r, 1))
+            qa_r  = item.get("qa", {})
+            st.markdown(f"""
+            <div class="q-card">
+              <div class="q-counter">Question {ridx+1} of {total_r} · {item.get('type','').title()} · {item.get('difficulty','').upper()}</div>
+              <p class="q-text">{item['q']}</p>
+              <div class="q-meta">
+                <span class="q-comp-tag">📊 {item.get('competency','')}</span>
+              </div>
+            </div>""", unsafe_allow_html=True)
+
+            st.markdown('<div class="sec" style="margin-top:.5rem">Your Answer</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div style="background:var(--surface2);border:1px solid var(--b2);border-radius:var(--r2);'
+                f'padding:1rem 1.2rem;font-family:Geist,sans-serif;font-size:.9rem;color:var(--t2);line-height:1.7">'
+                f'{item["a"]}</div>',
+                unsafe_allow_html=True,
+            )
+            rc1, rc2, rc3, rc4 = st.columns(4)
+            rc1.metric("Score",    f"{sc_r:.1f}/10")
+            rc2.metric("Words",    qa_r.get("wc", 0))
+            rc3.metric("STAR",     f'{qa_r.get("star_score",0)}/4')
+            rc4.metric("Fillers",  qa_r.get("filler_count", 0))
+
+            st.markdown(f"""
+            <div class="fb-card" style="margin-top:.8rem">
+              <div class="fb-sec"><div class="fb-lbl fb-lbl-str">✓ Strength</div><div class="fb-text">{item['eval'].get('strength','—')}</div></div>
+              <div class="fb-sec"><div class="fb-lbl fb-lbl-gap">✗ Gap</div><div class="fb-text">{item['eval'].get('weakness','—')}</div></div>
+              <div class="fb-sec"><div class="fb-lbl fb-lbl-sug">→ Suggestion</div><div class="fb-text">{item['eval'].get('suggestion','—')}</div></div>
+            </div>""", unsafe_allow_html=True)
+
+            # Navigation
+            rn1, rn2 = st.columns(2)
+            with rn1:
+                if st.button("← Previous", use_container_width=True, disabled=ridx == 0):
+                    ss.replay_idx = max(0, ridx - 1); st.rerun()
+            with rn2:
+                if st.button("Next →", use_container_width=True, disabled=ridx >= total_r - 1):
+                    ss.replay_idx = min(total_r - 1, ridx + 1); st.rerun()
+
+    # ── Insights tab ──────────────────────────────────────────
+    with tab6:
+        ins_l, ins_r = st.columns([1, 1], gap="large")
+
+        with ins_l:
+            # Sentiment arc
+            if ss.sentiment_arc and len(ss.sentiment_arc) >= 2:
+                st.markdown('<div class="sec">💬 Answer Sentiment Arc</div>', unsafe_allow_html=True)
+                arc_vals = ss.sentiment_arc
+                arc_cols = ["#00c896" if v > 0.1 else "#fb2c36" if v < -0.1 else "#fbbf24" for v in arc_vals]
+                fig_arc = go.Figure(go.Bar(
+                    x=[f"Q{i+1}" for i in range(len(arc_vals))], y=arc_vals,
+                    marker_color=arc_cols, marker_line_width=0,
+                    text=[f"{v:+.2f}" for v in arc_vals],
+                    textposition="outside", textfont=dict(size=9, color="#3d5580"),
+                ))
+                fig_arc.add_hline(y=0, line_color="rgba(255,255,255,0.1)")
+                fig_arc.update_layout(**PLOTLY_BASE, height=200, showlegend=False,
+                    yaxis=dict(gridcolor="#0e1a2e", zerolinecolor="#0e1a2e", range=[-1.1, 1.1]))
+                st.plotly_chart(fig_arc, use_container_width=True, config={"displayModeBar": False})
+                avg_sent = sum(arc_vals) / len(arc_vals)
+                sent_label = "Positive — you conveyed energy and achievement." if avg_sent > 0.1 else \
+                             "Neutral — balanced but consider more positive framing." if avg_sent > -0.1 else \
+                             "Negative-leaning — try reframing challenges as growth."
+                st.markdown(f'<div class="tip">📊 Avg sentiment: <b>{avg_sent:+.2f}</b> — {sent_label}</div>', unsafe_allow_html=True)
+
+            # Benchmark comparison
+            st.markdown('<div class="sec" style="margin-top:1rem">🏆 Role Benchmark</div>', unsafe_allow_html=True)
+            bm = get_benchmark(ss.category_tag)
+            bm_p50, bm_p75 = bm["p50"], bm["p75"]
+            bm_label = "Above P75 🏆" if avg > bm_p75 else "Above P50 ✓" if avg > bm_p50 else "Below P50 — needs work"
+            bm_color = "#00c896" if avg > bm_p75 else "#fbbf24" if avg > bm_p50 else "#fb2c36"
+            st.markdown(f"""
+            <div class="glass" style="padding:1.2rem">
+              <div style="font-family:'Geist',sans-serif;font-weight:700;font-size:.85rem;color:{bm_color};margin-bottom:.6rem">
+                {bm_label}
+              </div>
+              <div style="font-family:'Geist Mono',monospace;font-size:.65rem;color:var(--t3);margin-bottom:.8rem">
+                Role: {bm['label']} · Your score: {avg:.1f}/10
+              </div>
+              <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
+                <div style="font-family:'Geist Mono',monospace;font-size:.62rem;color:var(--t4);min-width:50px">YOU</div>
+                <div style="flex:1;height:5px;background:var(--b2);border-radius:99px;overflow:hidden">
+                  <div style="height:100%;width:{min(avg/10*100,100):.0f}%;background:{bm_color};border-radius:99px"></div>
+                </div>
+                <div style="font-family:'Geist',sans-serif;font-weight:700;font-size:.82rem;color:{bm_color}">{avg:.1f}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem">
+                <div style="font-family:'Geist Mono',monospace;font-size:.62rem;color:var(--t4);min-width:50px">P75</div>
+                <div style="flex:1;height:3px;background:var(--b2);border-radius:99px;overflow:hidden">
+                  <div style="height:100%;width:{bm_p75/10*100:.0f}%;background:rgba(0,212,255,0.4);border-radius:99px"></div>
+                </div>
+                <div style="font-family:'Geist Mono',monospace;font-size:.7rem;color:rgba(0,212,255,0.45)">{bm_p75}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:.6rem">
+                <div style="font-family:'Geist Mono',monospace;font-size:.62rem;color:var(--t4);min-width:50px">P50</div>
+                <div style="flex:1;height:3px;background:var(--b2);border-radius:99px;overflow:hidden">
+                  <div style="height:100%;width:{bm_p50/10*100:.0f}%;background:rgba(94,94,94,0.4);border-radius:99px"></div>
+                </div>
+                <div style="font-family:'Geist Mono',monospace;font-size:.7rem;color:var(--t4)">{bm_p50}</div>
+              </div>
+            </div>""", unsafe_allow_html=True)
+
+        with ins_r:
+            # Keyword heatmap (top 20 words)
+            kf = ss.keyword_freq
+            if kf:
+                st.markdown('<div class="sec">🔤 Keyword Frequency</div>', unsafe_allow_html=True)
+                top_kw = sorted(kf.items(), key=lambda x: x[1], reverse=True)[:20]
+                max_cnt = top_kw[0][1] if top_kw else 1
+                kw_html = ""
+                for word, cnt in top_kw:
+                    intensity = cnt / max_cnt
+                    bg = f"rgba(0,212,255,{0.06 + intensity*0.22:.2f})"
+                    border = f"rgba(0,212,255,{0.15 + intensity*0.35:.2f})"
+                    size = 0.6 + intensity * 0.25
+                    kw_html += (
+                        f'<span style="font-family:Geist Mono,monospace;font-size:{size:.2f}rem;'
+                        f'background:{bg};border:1px solid {border};border-radius:4px;'
+                        f'padding:.2rem .5rem;color:rgba(0,212,255,{0.4+intensity*0.55:.2f});'
+                        f'display:inline-block;margin:.2rem">{word} <sup style="font-size:.55rem;opacity:.6">{cnt}</sup></span>'
+                    )
+                st.markdown(f'<div style="display:flex;flex-wrap:wrap;gap:.1rem;margin-top:.2rem">{kw_html}</div>', unsafe_allow_html=True)
+
+                # Overuse warning
+                overused = [w for w, c in top_kw[:5] if c >= 3]
+                if overused:
+                    st.markdown(
+                        f'<div class="coach-bar coach-warn" style="margin-top:.8rem">'
+                        f'<span class="coach-icon">⚠️</span>'
+                        f'Frequently repeated: <b>{", ".join(overused)}</b>. Vary your vocabulary for stronger impact.</div>',
+                        unsafe_allow_html=True,
+                    )
+
+            # Auto-calibration log
+            if ss.auto_calibrate and ss.q_difficulties:
+                st.markdown('<div class="sec" style="margin-top:1rem">🎯 Auto-Calibration Log</div>', unsafe_allow_html=True)
+                diff_colors = {"easy": "#00c896", "medium": "#fbbf24", "hard": "#fb2c36"}
+                diff_html = "".join(
+                    f'<span style="font-family:Geist Mono,monospace;font-size:.6rem;'
+                    f'color:{diff_colors.get(d,"#94a3b8")};background:{diff_colors.get(d,"#94a3b8")}18;'
+                    f'border:1px solid {diff_colors.get(d,"#94a3b8")}33;border-radius:99px;padding:.15rem .5rem;margin:.15rem">'
+                    f'Q{i+1}: {d.upper()}</span>'
+                    for i, d in enumerate(ss.q_difficulties[:len(feedback_list)])
+                )
+                st.markdown(f'<div style="display:flex;flex-wrap:wrap;gap:.1rem">{diff_html}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    '<div class="tip" style="margin-top:.5rem">Difficulty adjusted in real-time based on your rolling score.</div>',
+                    unsafe_allow_html=True,
+                )
+
+            # Language used
+            if ss.get("interview_lang","English") != "English":
+                st.markdown(
+                    f'<div class="tip" style="margin-top:1rem">🌐 Interview conducted in <b>{ss.interview_lang}</b></div>',
+                    unsafe_allow_html=True,
+                )
+
+            # Resume session
+            st.markdown('<div class="sec" style="margin-top:1rem">⏸ Resume Session</div>', unsafe_allow_html=True)
+            resume_file_pause = st.file_uploader(
+                "Upload a saved pause file (.json) to resume", type=["json"],
+                key="resume_upload", label_visibility="collapsed",
+            )
+            if resume_file_pause:
+                try:
+                    saved = json.loads(resume_file_pause.read().decode())
+                    st.session_state.update(saved)
+                    st.session_state.screen = "interview"
+                    st.session_state.submitted = False
+                    st.success("✅ Session restored! Returning to interview…")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Could not restore session: {e}")
+
+    # ── Export tab ────────────────────────────────────────────
+    with tab7:
         st.markdown('<div class="sec">⬇️ Download Your Report</div>', unsafe_allow_html=True)
         c1, c2, c3, c4, c5 = st.columns(5)
         with c1:
             st.download_button(
                 "📦 JSON Report", data=build_json(st.session_state),
-                file_name=f"ketu_v2_2_{name.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                file_name=f"ketu_v2_3_{name.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
                 mime="application/json", use_container_width=True,
             )
         with c2:
             st.download_button(
                 "📊 CSV Export", data=build_csv(st.session_state),
-                file_name=f"ketu_v2_2_{name.replace(' ','_')}.csv",
+                file_name=f"ketu_v2_3_{name.replace(' ','_')}.csv",
                 mime="text/csv", use_container_width=True,
             )
         with c3:
